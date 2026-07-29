@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sudoku — Quadretti</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap');
+
+  :root{
+    --paper: #E7EBEC;
+    --paper-line: #C3CCD1;
+    --ink: #1B2A3A;
+    --ink-soft: #4C5B6B;
+    --accent: #2F6F62;
+    --accent-soft: #DCE9E5;
+    --error: #B3432B;
+    --error-soft: #F3DDD6;
+    --card: #F5F7F7;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    min-height:100vh;
+    background: var(--paper);
+    background-image:
+      linear-gradient(var(--paper-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-line) 1px, transparent 1px);
+    background-size: 28px 28px;
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    display:flex;
+    justify-content:center;
+    padding: 32px 16px 60px;
+  }
+
+  .wrap{
+    width: 100%;
+    max-width: 460px;
+  }
+
+  header{
+    text-align:center;
+    margin-bottom: 20px;
+  }
+
+  h1{
+    font-family: 'Fraunces', serif;
+    font-optical-sizing: auto;
+    font-weight: 700;
+    font-size: 2.1rem;
+    margin: 0 0 2px;
+    letter-spacing: -0.01em;
+  }
+
+  .sub{
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .panel{
+    background: var(--card);
+    border: 1px solid var(--paper-line);
+    border-radius: 4px;
+    padding: 16px;
+    box-shadow: 0 1px 0 rgba(27,42,58,0.04);
+  }
+
+  .toprow{
+    display:flex;
+    justify-content: space-between;
+    align-items:center;
+    margin-bottom: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+  }
+
+  .stat{ display:flex; flex-direction:column; gap:2px; }
+  .stat .k{ color: var(--ink-soft); font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em; }
+  .stat .v{ font-weight:700; font-size:1rem; }
+
+  select{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.8rem;
+    background: var(--card);
+    border:1px solid var(--paper-line);
+    color: var(--ink);
+    padding: 5px 8px;
+    border-radius: 3px;
+  }
+  select:focus-visible, button:focus-visible, .cell:focus-visible{
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  #board{
+    display:grid;
+    grid-template-columns: repeat(9, 1fr);
+    grid-template-rows: repeat(9, 1fr);
+    aspect-ratio: 1;
+    width: 100%;
+    background: var(--ink);
+    border: 2px solid var(--ink);
+    border-radius: 2px;
+    overflow:hidden;
+  }
+
+  .cell{
+    background: var(--card);
+    border: 0.5px solid #B7C0C6;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size: clamp(1rem, 4vw, 1.35rem);
+    font-weight: 500;
+    color: var(--accent);
+    cursor:pointer;
+    user-select:none;
+    position:relative;
+  }
+  .cell.given{ color: var(--ink); font-weight:700; cursor:default; }
+  .cell:nth-child(3n){ border-right: 2px solid var(--ink); }
+  .cell:nth-child(9n+1){ border-left: 2px solid var(--ink); }
+  .cell:nth-child(n+19):nth-child(-n+27),
+  .cell:nth-child(n+46):nth-child(-n+54){ border-bottom: 2px solid var(--ink); }
+  .row-3top{ border-top: 2px solid var(--ink); }
+
+  .cell.selected{ background: var(--accent-soft); }
+  .cell.peer{ background: #EDF2F1; }
+  .cell.same-value{ background: #D7E8E3; }
+  .cell.error{ background: var(--error-soft); color: var(--error) !important; }
+
+  .notes{
+    position:absolute; inset:0;
+    display:grid;
+    grid-template-columns: repeat(3,1fr);
+    grid-template-rows: repeat(3,1fr);
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.55rem;
+    color: var(--ink-soft);
+    font-weight:500;
+  }
+  .notes span{ display:flex; align-items:center; justify-content:center; }
+
+  .controls{
+    margin-top: 16px;
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+  }
+
+  .numpad{
+    display:grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+  }
+  .numpad button{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 1.05rem;
+    font-weight:600;
+    padding: 10px 0;
+    background: var(--card);
+    border: 1px solid var(--paper-line);
+    border-radius: 4px;
+    color: var(--ink);
+    cursor:pointer;
+    transition: background 0.15s;
+  }
+  .numpad button:hover{ background: var(--accent-soft); }
+  .numpad button.erase{ color: var(--error); }
+
+  .actionrow{
+    display:flex;
+    gap: 8px;
+  }
+  .actionrow button{
+    flex:1;
+    font-family:'Inter', sans-serif;
+    font-size: 0.82rem;
+    font-weight:600;
+    padding: 10px 6px;
+    background: var(--ink);
+    color: var(--card);
+    border:none;
+    border-radius:4px;
+    cursor:pointer;
+    letter-spacing: 0.01em;
+  }
+  .actionrow button.secondary{
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--paper-line);
+  }
+  .actionrow button.active-toggle{
+    background: var(--accent);
+    color:#fff;
+  }
+  .actionrow button:hover{ opacity:0.9; }
+
+  #message{
+    text-align:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    min-height: 20px;
+    margin-top: 10px;
+    color: var(--accent);
+    font-weight:600;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .numpad button{ transition:none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Sudoku</h1>
+    <div class="sub">Riempi la griglia, un quadretto alla volta</div>
+  </header>
+
+  <div class="panel">
+    <div class="toprow">
+      <div class="stat"><span class="k">Tempo</span><span class="v" id="timer">00:00</span></div>
+      <select id="difficulty">
+        <option value="easy">Facile</option>
+        <option value="medium" selected>Medio</option>
+        <option value="hard">Difficile</option>
+      </select>
+      <div class="stat"><span class="k">Errori</span><span class="v" id="errCount">0</span></div>
+    </div>
+
+    <div id="board" role="grid" aria-label="Griglia Sudoku"></div>
+
+    <div class="controls">
+      <div class="numpad" id="numpad"></div>
+      <div class="actionrow">
+        <button class="secondary" id="notesBtn" aria-pressed="false">✎ Note</button>
+        <button class="secondary" id="checkBtn">Controlla</button>
+        <button id="newBtn">Nuova partita</button>
+      </div>
+    </div>
+    <div id="message" aria-live="polite"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const SIZE = 9;
+  let solution = [];
+  let puzzle = [];
+  let given = [];
+  let userGrid = [];
+  let notesGrid = [];
+  let selected = null;
+  let notesMode = false;
+  let errCount = 0;
+  let timerInterval = null;
+  let seconds = 0;
+  let gameWon = false;
+
+  const boardEl = document.getElementById('board');
+  const numpadEl = document.getElementById('numpad');
+  const messageEl = document.getElementById('message');
+  const timerEl = document.getElementById('timer');
+  const errCountEl = document.getElementById('errCount');
+  const difficultySel = document.getElementById('difficulty');
+
+  // ---------- Sudoku generation (backtracking) ----------
+  function emptyGrid(){
+    return Array.from({length:9}, () => Array(9).fill(0));
+  }
+
+  function shuffle(arr){
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function isValid(grid, row, col, num){
+    for (let i = 0; i < 9; i++){
+      if (grid[row][i] === num || grid[i][col] === num) return false;
+    }
+    const br = row - row % 3, bc = col - col % 3;
+    for (let r = 0; r < 3; r++)
+      for (let c = 0; c < 3; c++)
+        if (grid[br+r][bc+c] === num) return false;
+    return true;
+  }
+
+  function fillGrid(grid){
+    for (let row = 0; row < 9; row++){
+      for (let col = 0; col < 9; col++){
+        if (grid[row][col] === 0){
+          const nums = shuffle([1,2,3,4,5,6,7,8,9]);
+          for (const num of nums){
+            if (isValid(grid, row, col, num)){
+              grid[row][col] = num;
+              if (fillGrid(grid)) return true;
+              grid[row][col] = 0;
+            }
+          }
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  function countSolutions(grid, limit){
+    let count = 0;
+    function solve(g){
+      if (count >= limit) return;
+      for (let row = 0; row < 9; row++){
+        for (let col = 0; col < 9; col++){
+          if (g[row][col] === 0){
+            for (let num = 1; num <= 9; num++){
+              if (isValid(g, row, col, num)){
+                g[row][col] = num;
+                solve(g);
+                g[row][col] = 0;
+                if (count >= limit) return;
+              }
+            }
+            return;
+          }
+        }
+      }
+      count++;
+    }
+    solve(grid.map(r => r.slice()));
+    return count;
+  }
+
+  function makePuzzle(fullGrid, holes){
+    const grid = fullGrid.map(r => r.slice());
+    const cells = shuffle(Array.from({length:81}, (_, i) => i));
+    let removed = 0;
+    for (const idx of cells){
+      if (removed >= holes) break;
+      const row = Math.floor(idx / 9), col = idx % 9;
+      const backup = grid[row][col];
+      if (backup === 0) continue;
+      grid[row][col] = 0;
+      const solCount = countSolutions(grid, 2);
+      if (solCount !== 1){
+        grid[row][col] = backup;
+      } else {
+        removed++;
+      }
+    }
+    return grid;
+  }
+
+  function difficultyHoles(level){
+    if (level === 'easy') return 36;
+    if (level === 'hard') return 54;
+    return 46; // medium
+  }
+
+  // ---------- Game setup ----------
+  function newGame(){
+    clearInterval(timerInterval);
+    seconds = 0;
+    errCount = 0;
+    gameWon = false;
+    errCountEl.textContent = '0';
+    timerEl.textContent = '00:00';
+    messageEl.textContent = '';
+    selected = null;
+
+    solution = emptyGrid();
+    fillGrid(solution);
+    puzzle = makePuzzle(solution, difficultyHoles(difficultySel.value));
+    given = puzzle.map(row => row.map(v => v !== 0));
+    userGrid = puzzle.map(row => row.slice());
+    notesGrid = Array.from({length:9}, () => Array.from({length:9}, () => new Set()));
+
+    renderBoard();
+    startTimer();
+  }
+
+  function startTimer(){
+    timerInterval = setInterval(() => {
+      seconds++;
+      const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+      const s = String(seconds % 60).padStart(2, '0');
+      timerEl.textContent = m + ':' + s;
+    }, 1000);
+  }
+
+  // ---------- Rendering ----------
+  function renderBoard(){
+    boardEl.innerHTML = '';
+    for (let row = 0; row < 9; row++){
+      for (let col = 0; col < 9; col++){
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.row = row;
+        cell.dataset.col = col;
+        cell.tabIndex = 0;
+        if (row % 3 === 0) cell.classList.add('row-3top');
+        if (given[row][col]) cell.classList.add('given');
+
+        const val = userGrid[row][col];
+        if (val !== 0){
+          cell.textContent = val;
+        } else if (notesGrid[row][col].size > 0){
+          const notesDiv = document.createElement('div');
+          notesDiv.className = 'notes';
+          for (let n = 1; n <= 9; n++){
+            const span = document.createElement('span');
+            if (notesGrid[row][col].has(n)) span.textContent = n;
+            notesDiv.appendChild(span);
+          }
+          cell.appendChild(notesDiv);
+        }
+
+        cell.addEventListener('click', () => selectCell(row, col));
+        cell.addEventListener('keydown', handleKey);
+        boardEl.appendChild(cell);
+      }
+    }
+    applySelectionStyles();
+  }
+
+  function selectCell(row, col){
+    if (gameWon) return;
+    selected = { row, col };
+    applySelectionStyles();
+  }
+
+  function applySelectionStyles(){
+    const cells = boardEl.querySelectorAll('.cell');
+    cells.forEach(c => c.classList.remove('selected', 'peer', 'same-value', 'error'));
+    if (!selected) return;
+    const { row, col } = selected;
+    const selVal = userGrid[row][col];
+
+    cells.forEach(c => {
+      const r = +c.dataset.row, cl = +c.dataset.col;
+      const sameRow = r === row, sameCol = cl === col;
+      const sameBox = Math.floor(r/3) === Math.floor(row/3) && Math.floor(cl/3) === Math.floor(col/3);
+      if (sameRow || sameCol || sameBox) c.classList.add('peer');
+      if (selVal !== 0 && userGrid[r][cl] === selVal) c.classList.add('same-value');
+      if (r === row && cl === col) c.classList.add('selected');
+      if (userGrid[r][cl] !== 0 && !given[r][cl] && solution[r][cl] !== userGrid[r][cl]){
+        c.classList.add('error');
+      }
+    });
+  }
+
+  function handleKey(e){
+    const row = +e.target.dataset.row, col = +e.target.dataset.col;
+    if (e.key >= '1' && e.key <= '9'){
+      selectCell(row, col);
+      placeNumber(+e.key);
+    } else if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0'){
+      selectCell(row, col);
+      placeNumber(0);
+    } else {
+      const moves = { ArrowUp:[-1,0], ArrowDown:[1,0], ArrowLeft:[0,-1], ArrowRight:[0,1] };
+      if (moves[e.key]){
+        e.preventDefault();
+        const [dr, dc] = moves[e.key];
+        const nr = Math.min(8, Math.max(0, row + dr));
+        const nc = Math.min(8, Math.max(0, col + dc));
+        boardEl.children[nr * 9 + nc].focus();
+        selectCell(nr, nc);
+      }
+    }
+  }
+
+  function placeNumber(num){
+    if (!selected || gameWon) return;
+    const { row, col } = selected;
+    if (given[row][col]) return;
+
+    if (notesMode && num !== 0){
+      if (notesGrid[row][col].has(num)) notesGrid[row][col].delete(num);
+      else notesGrid[row][col].add(num);
+      userGrid[row][col] = 0;
+    } else {
+      if (num === 0){
+        userGrid[row][col] = 0;
+      } else {
+        userGrid[row][col] = num;
+        notesGrid[row][col].clear();
+        if (solution[row][col] !== num){
+          errCount++;
+          errCountEl.textContent = errCount;
+        }
+      }
+    }
+    renderBoard();
+    reselectAfterRender(row, col);
+    checkWin();
+  }
+
+  function reselectAfterRender(row, col){
+    selected = { row, col };
+    applySelectionStyles();
+  }
+
+  function checkWin(){
+    for (let r = 0; r < 9; r++)
+      for (let c = 0; c < 9; c++)
+        if (userGrid[r][c] !== solution[r][c]) return;
+    gameWon = true;
+    clearInterval(timerInterval);
+    messageEl.textContent = '✓ Completato! Ottimo lavoro.';
+  }
+
+  function checkBoard(){
+    let allFilled = true;
+    let anyError = false;
+    for (let r = 0; r < 9; r++){
+      for (let c = 0; c < 9; c++){
+        if (userGrid[r][c] === 0) allFilled = false;
+        if (userGrid[r][c] !== 0 && userGrid[r][c] !== solution[r][c]) anyError = true;
+      }
+    }
+    if (anyError){
+      messageEl.textContent = 'Ci sono numeri sbagliati, evidenziati in rosso.';
+    } else if (!allFilled){
+      messageEl.textContent = 'Nessun errore finora — continua così.';
+    } else {
+      messageEl.textContent = '✓ Completato! Ottimo lavoro.';
+    }
+    applySelectionStyles();
+  }
+
+  // ---------- Numpad ----------
+  function buildNumpad(){
+    numpadEl.innerHTML = '';
+    for (let n = 1; n <= 9; n++){
+      const btn = document.createElement('button');
+      btn.textContent = n;
+      btn.addEventListener('click', () => placeNumber(n));
+      numpadEl.appendChild(btn);
+    }
+    const eraseBtn = document.createElement('button');
+    eraseBtn.textContent = '⌫';
+    eraseBtn.className = 'erase';
+    eraseBtn.addEventListener('click', () => placeNumber(0));
+    numpadEl.appendChild(eraseBtn);
+  }
+
+  document.getElementById('notesBtn').addEventListener('click', (e) => {
+    notesMode = !notesMode;
+    e.target.classList.toggle('active-toggle', notesMode);
+    e.target.setAttribute('aria-pressed', notesMode);
+  });
+  document.getElementById('checkBtn').addEventListener('click', checkBoard);
+  document.getElementById('newBtn').addEventListener('click', newGame);
+  difficultySel.addEventListener('change', newGame);
+
+  buildNumpad();
+  newGame();
+})();
+</script>
+</body>
+</html>
