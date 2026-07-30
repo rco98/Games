@@ -1,0 +1,1844 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#E7EBEC">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Cruciverba">
+<meta name="format-detection" content="telephone=no">
+<title>Il cruciverba delle scuole materne di Maria Letizia</title>
+
+<!-- I caratteri decorativi si caricano senza bloccare la pagina: se il tablet
+     è offline il gioco parte lo stesso con i caratteri di sistema. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" media="print" onload="this.media='all'"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+  :root{
+    --paper:      #E7EBEC;
+    --paper-line: #C3CCD1;
+    --ink:        #1B2A3A;
+    --ink-soft:   #4C5B6B;
+    --ink-num:    #3B4B5C;
+    --accent:     #2F6F62;
+    --accent-soft:#DCE9E5;
+    --error:      #B3432B;
+    --error-soft: #F3DDD6;
+    --card:       #F5F7F7;
+    --cellbg:     #FCFDFD;
+
+    /* piani di evidenziazione, dal più tenue al più marcato */
+    --hl-cross: #EAF0EE;
+    --hl-word:  #DCE9E5;
+    --hl-sel:   #A9D0C5;
+
+    /* la misura della casella la calcola il JS sullo spazio disponibile */
+    --cell: 44px;
+    --tap: 56px;
+
+    --mono:  'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+    --sans:  -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html, body{
+    height:100%;
+    margin:0;
+    overflow:hidden;               /* niente scroll: tutto sta in una schermata */
+    overscroll-behavior:none;
+  }
+
+  body{
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--paper-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-line) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--ink);
+    font-family:var(--sans);
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+    /* su iPad il tocco prolungato non deve selezionare testo né aprire il menù */
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
+  }
+  textarea, input{ -webkit-user-select:text; user-select:text; }
+
+  /* ===================== impianto della schermata ===================== */
+
+  .app{
+    height:100vh;
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    padding:10px 12px;
+    padding-bottom:max(10px, env(safe-area-inset-bottom));
+  }
+
+  .topbar{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex:0 0 auto;
+  }
+  h1{
+    font-family:var(--serif);
+    font-optical-sizing:auto;
+    font-weight:700;
+    font-size:clamp(0.95rem, 2.4vw, 1.35rem);
+    line-height:1.15;
+    margin:0;
+    letter-spacing:-0.01em;
+    flex:1 1 auto;
+    min-width:0;
+  }
+  .stat{
+    font-family:var(--mono);
+    font-size:0.9rem;
+    color:var(--ink-soft);
+    white-space:nowrap;
+    display:flex;
+    gap:12px;
+    flex:0 0 auto;
+  }
+  .stat b{ color:var(--ink); font-weight:700; }
+
+  .icon{
+    flex:0 0 auto;
+    width:var(--tap);
+    height:var(--tap);
+    border:1px solid var(--paper-line);
+    background:var(--cellbg);
+    border-radius:6px;
+    color:var(--ink);
+    font-size:1.5rem;
+    line-height:1;
+    cursor:pointer;
+  }
+  .icon:active{ background:var(--accent-soft); }
+
+  /* ---------------------------- griglia ---------------------------- */
+
+  .boardzone{
+    flex:1 1 auto;
+    min-height:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+  }
+  .board{
+    display:grid;
+    gap:0;
+    outline:none;
+    border:2px solid var(--ink-soft);
+    background:var(--card);
+  }
+
+  .cell{
+    width:var(--cell);
+    height:var(--cell);
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:transparent;
+  }
+  .cell.void{ background:var(--paper-line); opacity:0.35; }
+  .cell.live{
+    background:var(--cellbg);
+    box-shadow:0 0 0 1px var(--paper-line);
+    cursor:pointer;
+  }
+  .cell.live.cross{ background:var(--hl-cross); }
+  .cell.live.word{ background:var(--hl-word); }
+  .cell.live.sel{
+    background:var(--hl-sel);
+    box-shadow:0 0 0 3px var(--accent);
+    z-index:3;
+  }
+  .cell .num{
+    position:absolute;
+    top:2px; left:3px;
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:calc(var(--cell) * 0.30);
+    line-height:1;
+    color:var(--ink-num);
+    pointer-events:none;
+  }
+  .cell .ch{
+    font-family:var(--mono);
+    font-weight:500;
+    font-size:calc(var(--cell) * 0.58);
+    line-height:1;
+    margin-top:calc(var(--cell) * 0.08);
+    pointer-events:none;
+  }
+  .cell.wrong{ background:var(--error-soft); }
+  .cell.wrong .ch{ color:var(--error); }
+  .cell.given .ch{ color:var(--accent); font-weight:700; }
+
+  /* ------------------- colonna comandi (sotto o a lato) ------------------- */
+
+  .sidecol{
+    flex:0 0 auto;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    min-width:0;
+  }
+
+  .cluebar{
+    display:flex;
+    align-items:stretch;
+    border:1px solid var(--paper-line);
+    background:var(--cellbg);
+    border-radius:6px;
+    min-height:var(--tap);
+  }
+  .cluebar .arrow{
+    flex:0 0 52px;
+    border:none;
+    background:transparent;
+    color:var(--ink-soft);
+    font-size:1.6rem;
+    line-height:1;
+    cursor:pointer;
+  }
+  .cluebar .arrow:active{ background:var(--accent-soft); }
+  .cluebar .body{
+    flex:1 1 auto;
+    min-width:0;
+    padding:6px 4px;
+    text-align:left;
+    border:none;
+    background:transparent;
+    cursor:pointer;
+    font-family:var(--sans);
+    color:var(--ink);
+  }
+  .cluebar .tag{
+    display:block;
+    font-family:var(--mono);
+    font-size:0.7rem;
+    letter-spacing:0.08em;
+    color:var(--accent);
+    text-transform:uppercase;
+    margin-bottom:2px;
+  }
+  .cluebar .txt{
+    display:block;
+    font-size:1.15rem;
+    line-height:1.25;
+  }
+
+  /* --------------------------- tastiera --------------------------- */
+
+  .keys{ display:flex; flex-direction:column; gap:6px; }
+  .krow{ display:flex; gap:6px; justify-content:center; }
+  .key{
+    flex:1 1 0;
+    min-width:0;
+    height:var(--tap);
+    border:1px solid var(--paper-line);
+    background:var(--cellbg);
+    color:var(--ink);
+    border-radius:6px;
+    font-family:var(--mono);
+    font-size:1.25rem;
+    font-weight:500;
+    cursor:pointer;
+  }
+  .key:active{ background:var(--hl-sel); }
+  @media (hover:hover){ .key:hover{ background:var(--accent-soft); } }
+  .key.wide{ flex:1.6 1 0; font-size:1.15rem; }
+
+  /* --------------------------- due comandi -------------------------- */
+
+  .cmds{ display:flex; gap:8px; }
+  .btn{
+    flex:1 1 0;
+    min-height:var(--tap);
+    padding:0 14px;
+    border:1px solid var(--ink-soft);
+    background:var(--cellbg);
+    color:var(--ink);
+    border-radius:6px;
+    font-family:var(--sans);
+    font-size:1rem;
+    font-weight:500;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn:active{ background:var(--accent-soft); }
+  @media (hover:hover){ .btn:hover{ border-color:var(--accent); color:var(--accent); } }
+  .btn.primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  @media (hover:hover){ .btn.primary:hover{ background:#255A50; color:#fff; } }
+  .btn.quiet{ border-color:var(--paper-line); color:var(--ink-soft); }
+
+  /* --------------------- messaggio di passaggio --------------------- */
+
+  .flash{
+    position:fixed;
+    left:50%;
+    top:calc(env(safe-area-inset-top) + 12px);
+    transform:translateX(-50%);
+    max-width:88vw;
+    padding:10px 18px;
+    border-radius:8px;
+    background:var(--ink);
+    color:#fff;
+    font-family:var(--mono);
+    font-size:0.9rem;
+    text-align:center;
+    z-index:60;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.18s;
+  }
+  .flash.on{ opacity:0.95; }
+  .flash.ko{ background:var(--error); }
+
+  /* ------------------------ pannelli a comparsa ---------------------- */
+
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(27,42,58,0.34);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:70;
+  }
+  .overlay.on{ display:flex; }
+  .box{
+    background:var(--card);
+    border:1px solid var(--ink-soft);
+    border-radius:10px;
+    padding:20px;
+    max-width:560px;
+    width:100%;
+    max-height:88vh;
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+    box-shadow:0 16px 40px rgba(27,42,58,0.22);
+  }
+  .box.wide{ max-width:760px; }
+  .box h2{
+    font-family:var(--serif);
+    font-weight:700;
+    margin:0 0 4px;
+    font-size:1.35rem;
+  }
+  .box p{ font-size:0.95rem; line-height:1.45; color:var(--ink-soft); margin:0 0 14px; }
+  .box code{
+    font-family:var(--mono);
+    font-size:0.85rem;
+    background:var(--accent-soft);
+    padding:1px 5px;
+    border-radius:3px;
+  }
+
+  .menu{ display:flex; flex-direction:column; gap:8px; margin-bottom:6px; }
+  .menu .btn{ flex:0 0 auto; text-align:left; padding:0 16px; font-size:1.05rem; }
+
+  .field{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:10px 0;
+    border-bottom:1px solid var(--paper-line);
+    font-size:1rem;
+  }
+  .field:last-of-type{ border-bottom:none; }
+  select{
+    min-height:var(--tap);
+    padding:4px 10px;
+    border:1px solid var(--paper-line);
+    background:var(--cellbg);
+    color:var(--ink);
+    border-radius:6px;
+    font-family:var(--sans);
+    font-size:1rem;
+    max-width:60%;
+  }
+  .switch{ display:flex; align-items:center; gap:8px; }
+  input[type=checkbox]{ width:28px; height:28px; accent-color:var(--accent); }
+
+  textarea{
+    width:100%;
+    min-height:190px;
+    padding:10px;
+    border:1px solid var(--paper-line);
+    border-radius:6px;
+    background:var(--cellbg);
+    color:var(--ink);
+    font-family:var(--mono);
+    font-size:0.95rem;
+    line-height:1.5;
+    resize:vertical;
+  }
+  .msg{
+    font-size:0.9rem;
+    margin:8px 0;
+    min-height:1.2em;
+    font-family:var(--mono);
+  }
+  .msg.ok{ color:var(--accent); }
+  .msg.ko{ color:var(--error); }
+
+  .rowbtn{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+
+  /* --------------------- elenco delle definizioni -------------------- */
+
+  .clues{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:620px){ .clues{ grid-template-columns:1fr; } }
+  .clues h3{
+    font-family:var(--mono);
+    font-size:0.75rem;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin:0 0 6px;
+    padding-bottom:4px;
+    border-bottom:1px solid var(--paper-line);
+  }
+  .clues ol{ list-style:none; margin:0; padding:0; }
+  .clues li{
+    display:flex;
+    gap:8px;
+    padding:9px 6px;
+    font-size:0.98rem;
+    line-height:1.3;
+    border-radius:4px;
+    cursor:pointer;
+  }
+  .clues li span.n{
+    font-family:var(--mono);
+    font-weight:700;
+    color:var(--ink-soft);
+    flex:0 0 1.6em;
+    text-align:right;
+  }
+  .clues li.act{ background:var(--hl-word); }
+  .clues li.filled span.t{
+    color:var(--ink-soft);
+    text-decoration:line-through;
+    text-decoration-color:var(--paper-line);
+  }
+
+  /* ==================== tablet coricato: due colonne ==================== */
+
+  @media (orientation:landscape) and (min-width:820px){
+    .app{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) minmax(330px, 38%);
+      grid-template-rows:auto minmax(0,1fr);
+      column-gap:14px;
+    }
+    .topbar{ grid-column:1 / -1; }
+    .boardzone{ grid-column:1; grid-row:2; }
+    .sidecol{
+      grid-column:2;
+      grid-row:2;
+      justify-content:center;
+      min-height:0;
+    }
+    .cluebar .txt{ font-size:1.1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="topbar">
+    <h1>Il cruciverba delle scuole materne di Maria Letizia</h1>
+    <div class="stat">
+      <span>Caselle <b id="stFill">0/0</b></span>
+      <span id="stTime">0:00</span>
+    </div>
+    <button class="icon" id="setBtn" aria-label="Impostazioni">&#9881;</button>
+  </div>
+
+  <div class="boardzone" id="boardzone">
+    <div class="board" id="board" tabindex="0" role="grid" aria-label="Griglia del cruciverba"></div>
+  </div>
+
+  <div class="sidecol">
+    <div class="cluebar">
+      <button class="arrow" id="prevBtn" aria-label="Definizione precedente">&lsaquo;</button>
+      <button class="body" id="clueBody">
+        <span class="tag" id="clueTag">&mdash;</span>
+        <span class="txt" id="clueTxt">Genero lo schema&hellip;</span>
+      </button>
+      <button class="arrow" id="nextBtn" aria-label="Definizione successiva">&rsaquo;</button>
+    </div>
+
+    <div class="keys" id="keys"></div>
+
+    <div class="cmds">
+      <button class="btn" id="checkBtn">Controlla</button>
+      <button class="btn" id="helpBtn">Aiuto</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="flash" id="flash"></div>
+
+<!-- generazione dello schema / partita conclusa -->
+<div class="overlay" id="ov">
+  <div class="box" style="text-align:center">
+    <h2 id="ovTitle">Genero lo schema&hellip;</h2>
+    <p id="ovText">Incastro le parole per gli incroci.</p>
+    <button class="btn primary" id="ovBtn" style="display:none">Nuovo schema</button>
+  </div>
+</div>
+
+<!-- menù Aiuto -->
+<div class="overlay" id="help">
+  <div class="box">
+    <h2>Aiuto</h2>
+    <div class="menu">
+      <button class="btn" id="revLetBtn">Svela la lettera scelta</button>
+      <button class="btn" id="revWordBtn">Svela tutta la parola</button>
+      <button class="btn" id="listBtn">Elenco delle definizioni</button>
+      <button class="btn quiet" id="clearBtn">Cancella tutte le lettere</button>
+    </div>
+    <div class="rowbtn"><button class="btn primary" id="helpClose">Torna al gioco</button></div>
+  </div>
+</div>
+
+<!-- menù Impostazioni -->
+<div class="overlay" id="set">
+  <div class="box">
+    <h2>Impostazioni</h2>
+    <div class="field">
+      <label for="themeSel">Argomento delle definizioni</label>
+      <select id="themeSel"></select>
+    </div>
+    <div class="field">
+      <label for="sizeSel">Misura della griglia</label>
+      <select id="sizeSel">
+        <option value="p">Piccola</option>
+        <option value="m" selected>Media</option>
+        <option value="g">Grande</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="autoChk">Segna subito le lettere sbagliate</label>
+      <span class="switch"><input type="checkbox" id="autoChk"></span>
+    </div>
+    <div class="menu" style="margin-top:14px">
+      <button class="btn" id="newBtn">Nuovo schema</button>
+      <button class="btn quiet" id="bankBtn">Le mie definizioni</button>
+    </div>
+    <div class="rowbtn"><button class="btn primary" id="setClose">Torna al gioco</button></div>
+  </div>
+</div>
+
+<!-- elenco completo delle definizioni -->
+<div class="overlay" id="list">
+  <div class="box wide">
+    <h2>Definizioni</h2>
+    <p>Tocca una definizione per andare alle sue caselle.</p>
+    <div class="clues" id="cluesList"></div>
+    <div class="rowbtn"><button class="btn primary" id="listClose">Torna al gioco</button></div>
+  </div>
+</div>
+
+<!-- banca dati personale -->
+<div class="overlay" id="bank">
+  <div class="box">
+    <h2>Le mie definizioni</h2>
+    <p>Una voce per riga, nel formato <code>PAROLA = definizione</code>. Le parole devono avere almeno tre lettere; accenti e spazi vengono tolti da soli. Restano salvate sul tablet e finiscono nell&rsquo;argomento <b>Le mie</b>.</p>
+    <textarea id="bankTxt" spellcheck="false" placeholder="TEVERE = Il fiume di Roma&#10;PENNELLO = Strumento del pittore"></textarea>
+    <div class="msg" id="bankMsg"></div>
+    <div class="rowbtn">
+      <button class="btn primary" id="bankSave">Salva</button>
+      <button class="btn" id="bankCopy">Copia elenco</button>
+      <button class="btn" id="bankClose">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<!-- domanda di conferma -->
+<div class="overlay" id="ask">
+  <div class="box" style="max-width:440px">
+    <h2 id="askTitle">Confermi?</h2>
+    <p id="askText"></p>
+    <div class="rowbtn">
+      <button class="btn primary" id="askOk">Sì, procedi</button>
+      <button class="btn" id="askNo">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =======================================================================
+   BANCA DATI DELLE DEFINIZIONI
+   -----------------------------------------------------------------------
+   Formato: ['PAROLA', 'La definizione', 'Tema']
+   - la parola va in maiuscolo, senza accenti, spazi o apostrofi
+   - il tema è libero: se ne aggiungi uno nuovo compare da solo nel menù
+   Per aggiungere voci hai tre strade:
+     1. scrivi qui sotto, dentro questo elenco;
+     2. usa il pulsante "Le mie definizioni" dentro l'app;
+     3. definisci un array in window.DEFINIZIONI_EXTRA prima di questo
+        blocco (per esempio da un file mie-definizioni.js caricato con un
+        tag script separato): viene unito alla banca dati all'avvio.
+   ======================================================================= */
+var BANCA = [
+
+  /* ---------------------------- GEOGRAFIA ---------------------------- */
+  ['TEVERE','Il fiume di Roma','Geografia'],
+  ['ARNO','Bagna Firenze','Geografia'],
+  ['ADIGE','Il fiume di Trento','Geografia'],
+  ['ETNA','Il vulcano siciliano','Geografia'],
+  ['VESUVIO','Domina il golfo di Napoli','Geografia'],
+  ['SICILIA','La maggiore isola italiana','Geografia'],
+  ['CAPRI','L\u2019isola dei Faraglioni','Geografia'],
+  ['ELBA','Vi fu esiliato Napoleone','Geografia'],
+  ['GARDA','Il maggiore lago italiano','Geografia'],
+  ['SIENA','La città del Palio','Geografia'],
+  ['PISA','Ha la torre pendente','Geografia'],
+  ['TORINO','La città della Mole','Geografia'],
+  ['VENEZIA','La città dei canali','Geografia'],
+  ['NAPOLI','Vive all\u2019ombra del Vesuvio','Geografia'],
+  ['ALPI','Chiudono l\u2019Italia a nord','Geografia'],
+  ['ISOLA','Terra circondata dal mare','Geografia'],
+  ['ISTMO','Strozzatura tra due mari','Geografia'],
+  ['GOLFO','Ampia rientranza della costa','Geografia'],
+  ['BAIA','Piccola insenatura','Geografia'],
+  ['DUNA','Collina di sabbia mobile','Geografia'],
+  ['OASI','Verde in mezzo al deserto','Geografia'],
+  ['LAGUNA','Circonda Venezia','Geografia'],
+  ['DELTA','La foce a più rami','Geografia'],
+  ['ESTUARIO','La foce a imbuto','Geografia'],
+  ['FIORDO','Insenatura scandinava','Geografia'],
+  ['VALICO','Il passo tra i monti','Geografia'],
+  ['ALTOPIANO','Pianura in quota','Geografia'],
+  ['CRATERE','La bocca del vulcano','Geografia'],
+  ['ATLANTE','Regge il mondo e raccoglie le mappe','Geografia'],
+  ['EQUATORE','Divide i due emisferi','Geografia'],
+  ['MERIDIANO','Unisce i due poli','Geografia'],
+  ['TROPICO','Quello del Cancro','Geografia'],
+  ['POLO','L\u2019estremo del globo','Geografia'],
+  ['NILO','Il fiume dei faraoni','Geografia'],
+  ['SENNA','Il fiume di Parigi','Geografia'],
+  ['TAMIGI','Il fiume di Londra','Geografia'],
+  ['DANUBIO','Passa da Vienna e Budapest','Geografia'],
+  ['SAHARA','Il grande deserto africano','Geografia'],
+  ['ANDE','La catena del Sudamerica','Geografia'],
+  ['URALI','Monti fra Europa e Asia','Geografia'],
+  ['EVEREST','Il tetto del mondo','Geografia'],
+  ['CRETA','L\u2019isola di Minosse','Geografia'],
+  ['ATENE','La capitale greca','Geografia'],
+  ['PARIGI','La Ville Lumière','Geografia'],
+  ['LISBONA','Capitale sul Tago','Geografia'],
+  ['OSLO','Capitale norvegese','Geografia'],
+  ['VIENNA','Capitale sul Danubio','Geografia'],
+
+  /* ------------------------- STORIA E MITI --------------------------- */
+  ['CESARE','Cadde alle Idi di marzo','Storia e miti'],
+  ['BRUTO','Anche tu, figlio','Storia e miti'],
+  ['NERONE','L\u2019imperatore accusato dell\u2019incendio di Roma','Storia e miti'],
+  ['ROMOLO','Il primo re di Roma','Storia e miti'],
+  ['REMO','Il gemello ucciso','Storia e miti'],
+  ['ANNIBALE','Valicò le Alpi con gli elefanti','Storia e miti'],
+  ['ATTILA','Il flagello di Dio','Storia e miti'],
+  ['SPARTA','La rivale di Atene','Storia e miti'],
+  ['LEGIONE','Reparto dell\u2019esercito romano','Storia e miti'],
+  ['TOGA','La veste del romano','Storia e miti'],
+  ['ANFORA','Vaso antico a due manici','Storia e miti'],
+  ['VESTALE','Custodiva il fuoco sacro','Storia e miti'],
+  ['IMPERO','Il dominio dei Cesari','Storia e miti'],
+  ['FARAONE','Il sovrano d\u2019Egitto','Storia e miti'],
+  ['PIRAMIDE','Tomba monumentale egizia','Storia e miti'],
+  ['PAPIRO','Vi scrivevano gli Egizi','Storia e miti'],
+  ['FEUDO','Terra concessa dal sovrano','Storia e miti'],
+  ['ARALDO','Portava annunci e messaggi','Storia e miti'],
+  ['CROCIATA','Spedizione in Terrasanta','Storia e miti'],
+  ['TROIA','Cadde per un cavallo','Storia e miti'],
+  ['ULISSE','L\u2019eroe dalle molte astuzie','Storia e miti'],
+  ['ITACA','La meta del ritorno di Ulisse','Storia e miti'],
+  ['OMERO','Il cieco cantore di Troia','Storia e miti'],
+  ['ILIADE','Il poema dell\u2019ira di Achille','Storia e miti'],
+  ['ODISSEA','Il poema del ritorno','Storia e miti'],
+  ['ACHILLE','Vulnerabile al tallone','Storia e miti'],
+  ['ETTORE','Il difensore di Troia','Storia e miti'],
+  ['DEDALO','Costruì le ali di cera','Storia e miti'],
+  ['ICARO','Volò troppo vicino al sole','Storia e miti'],
+  ['LABIRINTO','L\u2019opera di Dedalo','Storia e miti'],
+  ['MINOTAURO','Il mostro del labirinto','Storia e miti'],
+  ['MEDUSA','Il suo sguardo pietrifica','Storia e miti'],
+  ['SFINGE','Poneva enigmi a chi passava','Storia e miti'],
+  ['CENTAURO','Metà uomo, metà cavallo','Storia e miti'],
+  ['CICLOPE','Ha un occhio solo','Storia e miti'],
+  ['SIRENA','Canta e attira i naviganti','Storia e miti'],
+  ['IDRA','Il mostro dalle molte teste','Storia e miti'],
+  ['ERCOLE','Compì dodici fatiche','Storia e miti'],
+  ['OLIMPO','La dimora degli dei','Storia e miti'],
+  ['ZEUS','Il padre degli dei','Storia e miti'],
+  ['ARES','Il dio della guerra','Storia e miti'],
+  ['EROS','Il dio dell\u2019amore','Storia e miti'],
+  ['ATENA','Nacque dalla testa di Zeus','Storia e miti'],
+  ['APOLLO','Il dio della lira','Storia e miti'],
+  ['ORACOLO','Rispondeva a Delfi','Storia e miti'],
+  ['DELFI','La sede dell\u2019oracolo','Storia e miti'],
+
+  /* ----------------------- SCIENZA E NATURA -------------------------- */
+  ['ATOMO','Il mattone della materia','Scienza e natura'],
+  ['NUCLEO','Il centro dell\u2019atomo','Scienza e natura'],
+  ['ELETTRONE','Gira attorno al nucleo','Scienza e natura'],
+  ['NEUTRONE','Particella senza carica','Scienza e natura'],
+  ['OSSIGENO','Lo respiriamo','Scienza e natura'],
+  ['FERRO','Metallo che si arrugginisce','Scienza e natura'],
+  ['RAME','Metallo rossiccio e conduttore','Scienza e natura'],
+  ['ORO','Metallo prezioso e giallo','Scienza e natura'],
+  ['PIOMBO','Metallo pesante e grigio','Scienza e natura'],
+  ['ZOLFO','L\u2019elemento giallo dei vulcani','Scienza e natura'],
+  ['MERCURIO','Metallo liquido e pianeta','Scienza e natura'],
+  ['SATURNO','Il pianeta con gli anelli','Scienza e natura'],
+  ['MARTE','Il pianeta rosso','Scienza e natura'],
+  ['VENERE','Il pianeta più luminoso','Scienza e natura'],
+  ['GIOVE','Il maggiore dei pianeti','Scienza e natura'],
+  ['COMETA','Astro con la coda','Scienza e natura'],
+  ['ORBITA','Il cammino di un pianeta','Scienza e natura'],
+  ['GALASSIA','Immenso insieme di stelle','Scienza e natura'],
+  ['ECLISSI','Il sole si oscura','Scienza e natura'],
+  ['LAVA','Scende dal vulcano','Scienza e natura'],
+  ['MAGMA','Roccia fusa sotterranea','Scienza e natura'],
+  ['SISMA','La scossa che fa tremare la terra','Scienza e natura'],
+  ['MAREA','L\u2019alta e la bassa','Scienza e natura'],
+  ['NEVE','Cade bianca e silenziosa','Scienza e natura'],
+  ['GRANDINE','Pioggia di ghiaccio','Scienza e natura'],
+  ['RUGIADA','Perle d\u2019acqua all\u2019alba','Scienza e natura'],
+  ['BREZZA','Vento leggero','Scienza e natura'],
+  ['MONSONE','Vento e pioggia d\u2019Asia','Scienza e natura'],
+  ['ARCOBALENO','Ponte di sette colori','Scienza e natura'],
+  ['QUERCIA','L\u2019albero delle ghiande','Scienza e natura'],
+  ['GHIANDA','Il frutto della quercia','Scienza e natura'],
+  ['BETULLA','Ha la corteccia bianca','Scienza e natura'],
+  ['PLATANO','L\u2019albero dei viali','Scienza e natura'],
+  ['CEDRO','L\u2019albero del Libano','Scienza e natura'],
+  ['EDERA','Rampicante sempreverde','Scienza e natura'],
+  ['ORTICA','La pianta che punge','Scienza e natura'],
+  ['POLLINE','Lo trasportano le api','Scienza e natura'],
+  ['APE','Fa il miele','Scienza e natura'],
+  ['FORMICA','Laboriosa e previdente','Scienza e natura'],
+  ['RONDINE','Annuncia la primavera','Scienza e natura'],
+  ['CIVETTA','Rapace notturno','Scienza e natura'],
+  ['AQUILA','Regina dei cieli','Scienza e natura'],
+  ['BALENA','Il gigante dei mari','Scienza e natura'],
+  ['DELFINO','Mammifero marino e giocoso','Scienza e natura'],
+  ['POLPO','Ha otto tentacoli','Scienza e natura'],
+  ['RANA','Salta e gracida','Scienza e natura'],
+  ['TALPA','Scava gallerie e non vede','Scienza e natura'],
+  ['LINCE','Ha la vista acutissima','Scienza e natura'],
+  ['GHIRO','Dorme a lungo','Scienza e natura'],
+  ['ISTRICE','Difeso dagli aculei','Scienza e natura'],
+  ['LUCERTOLA','Prende il sole sui muri','Scienza e natura'],
+  ['CAMMELLO','Ha due gobbe','Scienza e natura'],
+  ['DROMEDARIO','Ne ha una sola','Scienza e natura'],
+
+  /* -------------------------- ARTE E CULTURA ------------------------- */
+  ['DANTE','Il Sommo Poeta','Arte e cultura'],
+  ['INFERNO','La prima cantica','Arte e cultura'],
+  ['VIRGILIO','La guida di Dante','Arte e cultura'],
+  ['BEATRICE','L\u2019amata di Dante','Arte e cultura'],
+  ['TERZINA','La strofa della Commedia','Arte e cultura'],
+  ['SONETTO','Quattordici versi','Arte e cultura'],
+  ['RIMA','L\u2019accordo dei versi','Arte e cultura'],
+  ['ROMANZO','Lungo racconto in prosa','Arte e cultura'],
+  ['MANZONI','Scrisse i Promessi Sposi','Arte e cultura'],
+  ['LEOPARDI','Il poeta dell\u2019Infinito','Arte e cultura'],
+  ['PETRARCA','Cantò Laura','Arte e cultura'],
+  ['BOCCACCIO','L\u2019autore del Decamerone','Arte e cultura'],
+  ['GIOTTO','Dipinse ad Assisi','Arte e cultura'],
+  ['CANOVA','Scolpì Amore e Psiche','Arte e cultura'],
+  ['AFFRESCO','Pittura sul muro fresco','Arte e cultura'],
+  ['MOSAICO','È fatto di tessere','Arte e cultura'],
+  ['TELA','La monta il pittore','Arte e cultura'],
+  ['TAVOLOZZA','Vi si mescolano i colori','Arte e cultura'],
+  ['PENNELLO','Strumento del pittore','Arte e cultura'],
+  ['SCALPELLO','Strumento dello scultore','Arte e cultura'],
+  ['MARMO','La pietra di Carrara','Arte e cultura'],
+  ['ARGILLA','La modella il vasaio','Arte e cultura'],
+  ['SCALA','Il teatro di Milano','Arte e cultura'],
+  ['OPERA','Si canta in teatro','Arte e cultura'],
+  ['ARIA','Il pezzo solistico dell\u2019opera','Arte e cultura'],
+  ['VERDI','Compose l\u2019Aida','Arte e cultura'],
+  ['AIDA','L\u2019opera egizia di Verdi','Arte e cultura'],
+  ['SPARTITO','Vi si leggono le note','Arte e cultura'],
+  ['VIOLINO','Quattro corde e un archetto','Arte e cultura'],
+  ['ARCHETTO','Sfiora le corde','Arte e cultura'],
+  ['FLAUTO','Fiato di legno','Arte e cultura'],
+  ['ARPA','Si pizzica con le dita','Arte e cultura'],
+  ['OTTAVA','Intervallo di otto note','Arte e cultura'],
+  ['CORO','Canta tutto insieme','Arte e cultura'],
+  ['SIPARIO','Cala alla fine','Arte e cultura'],
+  ['PLATEA','Il pubblico in basso','Arte e cultura'],
+  ['ATTORE','Recita in scena','Arte e cultura'],
+  ['COPIONE','Contiene le battute','Arte e cultura'],
+  ['MASCHERA','Copre il volto in scena','Arte e cultura'],
+  ['ARLECCHINO','La maschera a toppe','Arte e cultura'],
+  ['PULCINELLA','La maschera napoletana','Arte e cultura'],
+  ['MIMO','Recita in silenzio','Arte e cultura'],
+  ['BALLETTO','Si danza in punta','Arte e cultura'],
+  ['MUSA','Ispira l\u2019artista','Arte e cultura'],
+
+  /* ------------------------- VITA QUOTIDIANA ------------------------- */
+  ['CHIAVE','Apre e chiude','Vita quotidiana'],
+  ['SERRATURA','La apre la chiave','Vita quotidiana'],
+  ['OMBRELLO','Si apre se piove','Vita quotidiana'],
+  ['VALIGIA','Si prepara per partire','Vita quotidiana'],
+  ['OROLOGIO','Segna le ore','Vita quotidiana'],
+  ['LANCETTA','Gira sul quadrante','Vita quotidiana'],
+  ['SVEGLIA','Suona al mattino','Vita quotidiana'],
+  ['CALENDARIO','Conta i giorni','Vita quotidiana'],
+  ['MATITA','Si tempera','Vita quotidiana'],
+  ['GOMMA','Cancella','Vita quotidiana'],
+  ['QUADERNO','Ha le pagine a righe','Vita quotidiana'],
+  ['LAVAGNA','Vi si scrive col gesso','Vita quotidiana'],
+  ['GESSO','Scrive sulla lavagna','Vita quotidiana'],
+  ['FORBICI','Tagliano con due lame','Vita quotidiana'],
+  ['AGO','Ha la cruna','Vita quotidiana'],
+  ['FILO','Passa nella cruna','Vita quotidiana'],
+  ['BOTTONE','Si cuce e si allaccia','Vita quotidiana'],
+  ['SCARPA','Ha tacco e suola','Vita quotidiana'],
+  ['CINTURA','Stringe in vita','Vita quotidiana'],
+  ['CAPPELLO','Copre la testa','Vita quotidiana'],
+  ['SCIARPA','Avvolge il collo','Vita quotidiana'],
+  ['GUANTO','Ha cinque dita','Vita quotidiana'],
+  ['SPECCHIO','Riflette chi lo guarda','Vita quotidiana'],
+  ['PETTINE','Ha molti denti e non morde','Vita quotidiana'],
+  ['SAPONE','Fa la schiuma','Vita quotidiana'],
+  ['CUSCINO','Sostiene la testa','Vita quotidiana'],
+  ['COPERTA','Scalda a letto','Vita quotidiana'],
+  ['TAPPETO','Si stende sul pavimento','Vita quotidiana'],
+  ['TENDA','Vela la finestra','Vita quotidiana'],
+  ['FINESTRA','Dà luce alla stanza','Vita quotidiana'],
+  ['BALCONE','Si affaccia sulla strada','Vita quotidiana'],
+  ['CANTINA','Il locale sotterraneo','Vita quotidiana'],
+  ['SOFFITTA','Il locale sotto il tetto','Vita quotidiana'],
+  ['CAMINO','Da lì esce il fumo','Vita quotidiana'],
+  ['PADELLA','Serve per friggere','Vita quotidiana'],
+  ['PENTOLA','Bolle sul fuoco','Vita quotidiana'],
+  ['MESTOLO','Serve la minestra','Vita quotidiana'],
+  ['COLTELLO','Ha lama e manico','Vita quotidiana'],
+  ['FORCHETTA','Ha i rebbi','Vita quotidiana'],
+  ['BICCHIERE','Si alza per brindare','Vita quotidiana'],
+  ['TOVAGLIA','Copre la tavola','Vita quotidiana'],
+  ['LIEVITO','Fa crescere la pasta','Vita quotidiana'],
+  ['FARINA','Si ottiene macinando','Vita quotidiana'],
+  ['MULINO','Macina il grano','Vita quotidiana'],
+  ['PANE','Si spezza a tavola','Vita quotidiana'],
+  ['MIELE','Il dolce dono delle api','Vita quotidiana'],
+  ['SALE','Si prende con un pizzico','Vita quotidiana'],
+  ['PEPE','Sta accanto al sale','Vita quotidiana'],
+  ['ACETO','Condisce con l\u2019olio','Vita quotidiana'],
+  ['OLIVA','Dà l\u2019olio','Vita quotidiana'],
+  ['LIMONE','Agrume giallo e aspro','Vita quotidiana'],
+  ['MELA','Il frutto di Newton','Vita quotidiana'],
+  ['PERA','Il frutto dal collo stretto','Vita quotidiana'],
+  ['UVA','Dà il vino','Vita quotidiana'],
+  ['MERCATO','Vi si fa la spesa','Vita quotidiana'],
+  ['MONETA','Ha testa e croce','Vita quotidiana'],
+  ['SCONTRINO','Lo consegna la cassa','Vita quotidiana']
+];
+/* ===================== FINE DELLA BANCA DATI ========================= */
+(function(){
+  'use strict';
+
+  var STORE = 'quadretti.cruciverba.v2';
+  var USERBANK = 'quadretti.cruciverba.miedefinizioni.v1';
+
+  /* Misure pensate per il tablet in verticale: anche la griglia "Grande"
+     lascia caselle abbondantemente sopra il polpastrello. */
+  var SIZES = {
+    p: { target: 10, max: 10 },
+    m: { target: 14, max: 13 },
+    g: { target: 20, max: 16 }
+  };
+
+  function $(id){ return document.getElementById(id); }
+
+  /* ------------------------ utilità di base ------------------------ */
+
+  function normWord(s){
+    return (s || '')
+      .toUpperCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^A-Z]/g, '');
+  }
+
+  function mulberry32(a){
+    return function(){
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  function shuffled(arr, rnd){
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--){
+      var j = Math.floor(rnd() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  function fmtTime(s){
+    var m = Math.floor(s / 60);
+    var r = s % 60;
+    return m + ':' + (r < 10 ? '0' : '') + r;
+  }
+
+  /* --------------------- pannelli e conferme ----------------------- */
+
+  function openOv(id){ $(id).classList.add('on'); }
+  function closeOv(id){ $(id).classList.remove('on'); }
+  function closeAllMenus(){
+    ['help', 'set', 'list', 'bank', 'ask'].forEach(closeOv);
+  }
+
+  var askCb = null, askNoCb = null;
+
+  function ask(title, text, onOk, onNo){
+    $('askTitle').textContent = title;
+    $('askText').textContent = text;
+    askCb = onOk || null;
+    askNoCb = onNo || null;
+    openOv('ask');
+  }
+  $('askOk').addEventListener('click', function(){
+    closeOv('ask');
+    var f = askCb; askCb = null; askNoCb = null;
+    if (f) f();
+  });
+  $('askNo').addEventListener('click', function(){
+    closeOv('ask');
+    var f = askNoCb; askCb = null; askNoCb = null;
+    if (f) f();
+  });
+
+  /* --------------------- banca dati completa ----------------------- */
+
+  var bank = [];      // [{w, clue, theme}]
+  var themes = [];
+
+  function readUserBank(){
+    try{
+      var raw = localStorage.getItem(USERBANK);
+      return raw ? JSON.parse(raw) : [];
+    } catch(e){ return []; }
+  }
+
+  function buildBank(){
+    var seen = {};
+    bank = [];
+    var src = BANCA.slice();
+    if (window.DEFINIZIONI_EXTRA && window.DEFINIZIONI_EXTRA.length){
+      src = src.concat(window.DEFINIZIONI_EXTRA);
+    }
+    src = src.concat(readUserBank().map(function(e){
+      return [e.w, e.clue, 'Le mie'];
+    }));
+
+    src.forEach(function(row){
+      if (!row) return;
+      var w = normWord(row[0]);
+      var clue = (row[1] || '').toString().trim();
+      var theme = (row[2] || 'Varie').toString().trim();
+      if (w.length < 3 || w.length > 14 || !clue) return;
+      if (seen[w]) return;      // la prima definizione vince
+      seen[w] = true;
+      bank.push({ w: w, clue: clue, theme: theme });
+    });
+
+    var set = {};
+    bank.forEach(function(e){ set[e.theme] = (set[e.theme] || 0) + 1; });
+    themes = Object.keys(set).sort();
+
+    var sel = $('themeSel');
+    var keep = sel.value;
+    sel.innerHTML = '';
+    var o = document.createElement('option');
+    o.value = '*'; o.textContent = 'Tutti (' + bank.length + ')';
+    sel.appendChild(o);
+    themes.forEach(function(t){
+      var op = document.createElement('option');
+      op.value = t; op.textContent = t + ' (' + set[t] + ')';
+      sel.appendChild(op);
+    });
+    if (keep) sel.value = keep;
+    if (!sel.value) sel.value = '*';
+  }
+
+  /* ------------------ generatore di schema libero ------------------ */
+  /* Incastro a incroci: ogni parola nuova deve intersecare una parola
+     già posata; nessuna coppia di lettere adiacenti può formare una
+     sequenza che non sia una parola dell'elenco.                     */
+
+  function K(r, c){ return r + ',' + c; }
+
+  function tryPlace(cells, word, r0, c0, dir){
+    var L = word.length, inters = 0, i, r, c, cell;
+    var before = dir === 'h' ? K(r0, c0 - 1) : K(r0 - 1, c0);
+    var after  = dir === 'h' ? K(r0, c0 + L) : K(r0 + L, c0);
+    if (cells[before] || cells[after]) return -1;
+
+    for (i = 0; i < L; i++){
+      r = dir === 'h' ? r0 : r0 + i;
+      c = dir === 'h' ? c0 + i : c0;
+      cell = cells[K(r, c)];
+      if (cell){
+        if (cell.ch !== word.charAt(i)) return -1;
+        if (dir === 'h' ? cell.h : cell.v) return -1;   // già occupata in questa direzione
+        inters++;
+      } else {
+        if (dir === 'h'){
+          if (cells[K(r - 1, c)] || cells[K(r + 1, c)]) return -1;
+        } else {
+          if (cells[K(r, c - 1)] || cells[K(r, c + 1)]) return -1;
+        }
+      }
+    }
+    return inters;
+  }
+
+  function commit(cells, word, r0, c0, dir){
+    for (var i = 0; i < word.length; i++){
+      var r = dir === 'h' ? r0 : r0 + i;
+      var c = dir === 'h' ? c0 + i : c0;
+      var k = K(r, c);
+      var cell = cells[k] || (cells[k] = { ch: word.charAt(i), h: false, v: false });
+      if (dir === 'h') cell.h = true; else cell.v = true;
+    }
+  }
+
+  function attempt(pool, opts, rnd){
+    var cells = {};
+    var placed = [];
+    var used = {};
+    var bb = { r1: 0, c1: 0, r2: 0, c2: 0 };
+    var order = shuffled(pool, rnd).sort(function(a, b){
+      return b.w.length - a.w.length + (rnd() - 0.5) * 3;
+    });
+
+    // prima parola: la più lunga fra le prime disponibili
+    var first = order[0];
+    commit(cells, first.w, 0, 0, 'h');
+    placed.push({ e: first, r: 0, c: 0, dir: 'h' });
+    used[first.w] = true;
+    bb = { r1: 0, c1: 0, r2: 0, c2: first.w.length - 1 };
+
+    for (var oi = 1; oi < order.length && placed.length < opts.target; oi++){
+      var e = order[oi];
+      if (used[e.w]) continue;
+      var W = e.w, best = null;
+
+      for (var k in cells){
+        var p = k.split(','), cr = +p[0], cc = +p[1];
+        var cell = cells[k];
+        var dir = !cell.h ? 'h' : (!cell.v ? 'v' : null);
+        if (!dir) continue;
+        for (var i = 0; i < W.length; i++){
+          if (W.charAt(i) !== cell.ch) continue;
+          var r0 = dir === 'h' ? cr : cr - i;
+          var c0 = dir === 'h' ? cc - i : cc;
+          var r2 = dir === 'h' ? r0 : r0 + W.length - 1;
+          var c2 = dir === 'h' ? c0 + W.length - 1 : c0;
+
+          var nh = Math.max(bb.r2, r2) - Math.min(bb.r1, r0) + 1;
+          var nw = Math.max(bb.c2, c2) - Math.min(bb.c1, c0) + 1;
+          if (nh > opts.max || nw > opts.max) continue;
+
+          var inters = tryPlace(cells, W, r0, c0, dir);
+          if (inters < 1) continue;
+
+          var grow = (nh * nw) - ((bb.r2 - bb.r1 + 1) * (bb.c2 - bb.c1 + 1));
+          var score = inters * 8 - grow * 0.35 - Math.abs(nh - nw) * 0.8 + rnd() * 1.2;
+          if (!best || score > best.score){
+            best = { score: score, r: r0, c: c0, dir: dir, r2: r2, c2: c2 };
+          }
+        }
+      }
+
+      if (best){
+        commit(cells, W, best.r, best.c, best.dir);
+        placed.push({ e: e, r: best.r, c: best.c, dir: best.dir });
+        used[W] = true;
+        bb.r1 = Math.min(bb.r1, best.r); bb.c1 = Math.min(bb.c1, best.c);
+        bb.r2 = Math.max(bb.r2, best.r2); bb.c2 = Math.max(bb.c2, best.c2);
+      }
+    }
+
+    var h = bb.r2 - bb.r1 + 1, w = bb.c2 - bb.c1 + 1;
+    return {
+      placed: placed, cells: cells, bb: bb, w: w, h: h,
+      quality: placed.length * 10 - Math.abs(w - h) - (w * h) * 0.02
+    };
+  }
+
+  function buildPuzzle(pool, opts, seed){
+    var rnd = mulberry32(seed);
+    var best = null, out = null;
+    for (var a = 0; a < 90; a++){
+      var res = attempt(pool, opts, rnd);
+      var fin = finalize(res);           // scarto subito gli schemi con parole senza definizione
+      if (!fin) continue;
+      if (!best || res.quality > best.quality){ best = res; out = fin; }
+      if (res.placed.length >= opts.target && res.w <= opts.max && res.h <= opts.max) break;
+    }
+    return out;
+  }
+
+  function finalize(res){
+    var w = res.w, h = res.h, dr = -res.bb.r1, dc = -res.bb.c1;
+    var sol = [], i, r, c;
+    for (r = 0; r < h; r++){
+      sol.push([]);
+      for (c = 0; c < w; c++) sol[r].push(null);
+    }
+    for (var k in res.cells){
+      var p = k.split(',');
+      sol[+p[0] + dr][+p[1] + dc] = res.cells[k].ch;
+    }
+
+    var clueOf = {};
+    res.placed.forEach(function(pl){ clueOf[pl.e.w] = pl.e.clue; });
+
+    // ricavo le voci dalle sequenze massime, così la numerazione è quella classica
+    var entries = [];
+    var nums = [];
+    for (r = 0; r < h; r++){ nums.push(new Array(w).fill(0)); }
+    var n = 0;
+    for (r = 0; r < h; r++){
+      for (c = 0; c < w; c++){
+        if (!sol[r][c]) continue;
+        var startH = (c === 0 || !sol[r][c - 1]) && (c + 1 < w && sol[r][c + 1]);
+        var startV = (r === 0 || !sol[r - 1][c]) && (r + 1 < h && sol[r + 1][c]);
+        if (!startH && !startV) continue;
+        n++;
+        nums[r][c] = n;
+        if (startH){
+          var s = '', cc = c;
+          while (cc < w && sol[r][cc]){ s += sol[r][cc]; cc++; }
+          entries.push({ num: n, dir: 'h', r: r, c: c, len: s.length, word: s, clue: clueOf[s] });
+        }
+        if (startV){
+          var t = '', rr = r;
+          while (rr < h && sol[rr][c]){ t += sol[rr][c]; rr++; }
+          entries.push({ num: n, dir: 'v', r: r, c: c, len: t.length, word: t, clue: clueOf[t] });
+        }
+      }
+    }
+
+    // se una sequenza non ha definizione lo schema non è valido
+    for (i = 0; i < entries.length; i++){
+      if (!entries[i].clue) return null;
+    }
+
+    // indice: per ogni casella, quale voce orizzontale e verticale la copre
+    var idx = [];
+    for (r = 0; r < h; r++){
+      idx.push([]);
+      for (c = 0; c < w; c++) idx[r].push(null);
+    }
+    entries.forEach(function(en, ei){
+      for (i = 0; i < en.len; i++){
+        var rr = en.dir === 'h' ? en.r : en.r + i;
+        var cc = en.dir === 'h' ? en.c + i : en.c;
+        if (!idx[rr][cc]) idx[rr][cc] = { h: null, v: null };
+        idx[rr][cc][en.dir] = ei;
+      }
+    });
+
+    return { w: w, h: h, sol: sol, nums: nums, entries: entries, idx: idx };
+  }
+
+  /* ---------------------------- stato ----------------------------- */
+
+  var P = null;              // schema
+  var user = [];             // lettere inserite
+  var revealed = [];         // caselle svelate
+  var sel = { r: 0, c: 0, dir: 'h' };
+  var elapsed = 0, timerId = null, running = false;
+  var autoCheck = false, wrongFlash = null, solved = false;
+  var activeTheme = '*', activeSize = 'm';
+
+  var boardEl = $('board');
+  var zoneEl = $('boardzone');
+  var cellEls = [];
+
+  /* -------------------- la griglia riempie lo spazio ---------------- */
+
+  function fitBoard(){
+    if (!P) return;
+    var w = zoneEl.clientWidth, h = zoneEl.clientHeight;
+    if (!w || !h) return;
+    var cell = Math.floor(Math.min((w - 4) / P.w, (h - 4) / P.h));
+    cell = Math.max(20, Math.min(cell, 96));
+    document.documentElement.style.setProperty('--cell', cell + 'px');
+  }
+
+  if (window.ResizeObserver){
+    new ResizeObserver(fitBoard).observe(zoneEl);
+  }
+  window.addEventListener('resize', fitBoard);
+  window.addEventListener('orientationchange', function(){ setTimeout(fitBoard, 250); });
+
+  /* -------------------------- costruzione -------------------------- */
+
+  function renderBoardSkeleton(){
+    boardEl.style.gridTemplateColumns = 'repeat(' + P.w + ', var(--cell))';
+    boardEl.innerHTML = '';
+    cellEls = [];
+    for (var r = 0; r < P.h; r++){
+      cellEls.push([]);
+      for (var c = 0; c < P.w; c++){
+        var d = document.createElement('div');
+        if (!P.sol[r][c]){
+          d.className = 'cell void';
+          d.setAttribute('aria-hidden', 'true');
+        } else {
+          d.className = 'cell live';
+          d.setAttribute('role', 'gridcell');
+          d.dataset.r = r; d.dataset.c = c;
+          if (P.nums[r][c]){
+            var s = document.createElement('span');
+            s.className = 'num';
+            s.textContent = P.nums[r][c];
+            d.appendChild(s);
+          }
+          var ch = document.createElement('span');
+          ch.className = 'ch';
+          d.appendChild(ch);
+        }
+        boardEl.appendChild(d);
+        cellEls[r].push(d);
+      }
+    }
+    fitBoard();
+  }
+
+  function entryAt(r, c, dir){
+    var o = P.idx[r][c];
+    if (!o) return null;
+    if (o[dir] !== null && o[dir] !== undefined) return o[dir];
+    var other = dir === 'h' ? 'v' : 'h';
+    return (o[other] !== null && o[other] !== undefined) ? o[other] : null;
+  }
+
+  function currentEntry(){
+    var ei = entryAt(sel.r, sel.c, sel.dir);
+    return ei === null ? null : P.entries[ei];
+  }
+
+  function entryCells(en){
+    var out = [];
+    for (var i = 0; i < en.len; i++){
+      out.push(en.dir === 'h' ? { r: en.r, c: en.c + i } : { r: en.r + i, c: en.c });
+    }
+    return out;
+  }
+
+  function paint(){
+    var en = currentEntry();
+    var inWord = {}, inCross = {};
+    if (en){
+      // la voce attiva è marcata; la voce perpendicolare sulla casella attiva
+      // resta un tono più tenue, come riga e colonna nel Sudoku
+      entryCells(en).forEach(function(p){ inWord[K(p.r, p.c)] = 1; });
+      var oi = entryAt(sel.r, sel.c, sel.dir === 'h' ? 'v' : 'h');
+      if (oi !== null && P.entries[oi] !== en){
+        entryCells(P.entries[oi]).forEach(function(p){ inCross[K(p.r, p.c)] = 1; });
+      }
+    }
+
+    var filled = 0, total = 0;
+    for (var r = 0; r < P.h; r++){
+      for (var c = 0; c < P.w; c++){
+        if (!P.sol[r][c]) continue;
+        total++;
+        var el = cellEls[r][c], k = K(r, c);
+        var ch = user[r][c] || '';
+        if (ch) filled++;
+        el.lastChild.textContent = ch;
+
+        var cls = 'cell live';
+        if (inCross[k]) cls += ' cross';
+        if (inWord[k]) cls += ' word';
+        if (r === sel.r && c === sel.c) cls += ' sel';
+        if (revealed[r][c]) cls += ' given';
+        var showWrong = ch && ch !== P.sol[r][c] && !revealed[r][c] &&
+          (autoCheck || (wrongFlash && wrongFlash[k]));
+        if (showWrong) cls += ' wrong';
+        el.className = cls;
+      }
+    }
+
+    $('stFill').textContent = filled + '/' + total;
+
+    if (en){
+      $('clueTag').textContent =
+        en.num + ' ' + (en.dir === 'h' ? 'Orizzontale' : 'Verticale') + ' · ' + en.len + ' lettere';
+      $('clueTxt').textContent = en.clue;
+    }
+    paintClueList();
+    saveState();
+  }
+
+  function countRevealed(){
+    var n = 0;
+    for (var r = 0; r < P.h; r++) for (var c = 0; c < P.w; c++) if (revealed[r][c]) n++;
+    return n;
+  }
+  function countWrong(){
+    var n = 0;
+    for (var r = 0; r < P.h; r++) for (var c = 0; c < P.w; c++){
+      if (P.sol[r][c] && user[r][c] && user[r][c] !== P.sol[r][c]) n++;
+    }
+    return n;
+  }
+  function entryFilled(en){
+    return entryCells(en).every(function(p){ return !!user[p.r][p.c]; });
+  }
+
+  /* -------------------- elenco delle definizioni -------------------- */
+
+  function buildClueLists(){
+    var host = $('cluesList');
+    host.innerHTML = '';
+    ['h', 'v'].forEach(function(dir){
+      var col = document.createElement('div');
+      col.className = 'col';
+      var h3 = document.createElement('h3');
+      h3.textContent = dir === 'h' ? 'Orizzontali' : 'Verticali';
+      col.appendChild(h3);
+      var ol = document.createElement('ol');
+      ol.dataset.dir = dir;
+      P.entries.forEach(function(en, ei){
+        if (en.dir !== dir) return;
+        var li = document.createElement('li');
+        li.dataset.ei = ei;
+        li.innerHTML = '<span class="n">' + en.num + '</span><span class="t"></span>';
+        li.querySelector('.t').textContent = en.clue;
+        li.addEventListener('click', function(){
+          sel = { r: en.r, c: en.c, dir: en.dir };
+          focusFirstEmpty(en);
+          closeOv('list');
+          paint();
+        });
+        ol.appendChild(li);
+      });
+      col.appendChild(ol);
+      host.appendChild(col);
+    });
+  }
+
+  function paintClueList(){
+    var en = currentEntry();
+    var actIdx = en ? P.entries.indexOf(en) : -1;
+    var items = document.querySelectorAll('.clues li');
+    for (var i = 0; i < items.length; i++){
+      var ei = +items[i].dataset.ei;
+      items[i].classList.toggle('act', ei === actIdx);
+      items[i].classList.toggle('filled', entryFilled(P.entries[ei]));
+    }
+  }
+
+  /* ---------------------- movimento e scrittura --------------------- */
+
+  function focusFirstEmpty(en){
+    var cs = entryCells(en);
+    for (var i = 0; i < cs.length; i++){
+      if (!user[cs[i].r][cs[i].c]){ sel.r = cs[i].r; sel.c = cs[i].c; return; }
+    }
+    sel.r = cs[0].r; sel.c = cs[0].c;
+  }
+
+  function selectCell(r, c){
+    if (!P.sol[r][c]) return;
+    var o = P.idx[r][c];
+    if (!o) return;
+    if (r === sel.r && c === sel.c){
+      var other = sel.dir === 'h' ? 'v' : 'h';
+      if (o[other] !== null && o[other] !== undefined) sel.dir = other;
+    } else {
+      sel.r = r; sel.c = c;
+      if (o[sel.dir] === null || o[sel.dir] === undefined){
+        sel.dir = sel.dir === 'h' ? 'v' : 'h';
+      }
+    }
+    paint();
+  }
+
+  function step(delta){
+    var en = currentEntry();
+    if (!en) return false;
+    var cs = entryCells(en);
+    var pos = -1;
+    for (var i = 0; i < cs.length; i++){
+      if (cs[i].r === sel.r && cs[i].c === sel.c){ pos = i; break; }
+    }
+    var np = pos + delta;
+    if (np >= 0 && np < cs.length){ sel.r = cs[np].r; sel.c = cs[np].c; return true; }
+    return false;
+  }
+
+  function nextEntry(delta){
+    var en = currentEntry();
+    var i = en ? P.entries.indexOf(en) : 0;
+    var n = P.entries.length;
+    var j = ((i + delta) % n + n) % n;
+    sel = { r: P.entries[j].r, c: P.entries[j].c, dir: P.entries[j].dir };
+    focusFirstEmpty(P.entries[j]);
+  }
+
+  function advanceAfterType(){
+    if (step(1)) return;
+    var en = currentEntry();
+    if (en && entryFilled(en)){
+      // salto alla prima voce ancora incompleta
+      var i = P.entries.indexOf(en), n = P.entries.length;
+      for (var k = 1; k <= n; k++){
+        var cand = P.entries[(i + k) % n];
+        if (!entryFilled(cand)){
+          sel = { r: cand.r, c: cand.c, dir: cand.dir };
+          focusFirstEmpty(cand);
+          return;
+        }
+      }
+    }
+  }
+
+  function typeLetter(ch){
+    if (solved) return;
+    if (revealed[sel.r][sel.c]){ advanceAfterType(); paint(); return; }
+    user[sel.r][sel.c] = ch;
+    startTimer();
+    advanceAfterType();
+    paint();
+    checkSolved();
+  }
+
+  function erase(){
+    if (solved) return;
+    if (revealed[sel.r][sel.c]) return;
+    if (user[sel.r][sel.c]){
+      user[sel.r][sel.c] = '';
+    } else if (step(-1)){
+      if (!revealed[sel.r][sel.c]) user[sel.r][sel.c] = '';
+    }
+    paint();
+  }
+
+  function checkSolved(){
+    for (var r = 0; r < P.h; r++) for (var c = 0; c < P.w; c++){
+      if (P.sol[r][c] && user[r][c] !== P.sol[r][c]) return;
+    }
+    solved = true;
+    stopTimer();
+    saveState();
+    showOverlay('Schema completato!',
+      'Tempo ' + fmtTime(elapsed) + ' · caselle svelate ' + countRevealed() + '.', true);
+  }
+
+  /* ----------------------------- tastiera --------------------------- */
+
+  function buildKeys(){
+    var rows = ['ABCDEFGHI', 'JKLMNOPQR', 'STUVWXYZ'];
+    var host = $('keys');
+    host.innerHTML = '';
+    rows.forEach(function(row, ri){
+      var div = document.createElement('div');
+      div.className = 'krow';
+      row.split('').forEach(function(ch){
+        var b = document.createElement('button');
+        b.className = 'key';
+        b.type = 'button';
+        b.textContent = ch;
+        b.addEventListener('click', function(){ typeLetter(ch); });
+        div.appendChild(b);
+      });
+      if (ri === 2){
+        var del = document.createElement('button');
+        del.className = 'key wide';
+        del.type = 'button';
+        del.textContent = '⌫';
+        del.setAttribute('aria-label', 'Cancella');
+        del.addEventListener('click', erase);
+        div.appendChild(del);
+      }
+      host.appendChild(div);
+    });
+  }
+
+  /* ------------------------- timer e salvataggio -------------------- */
+
+  function startTimer(){
+    if (running || solved) return;
+    running = true;
+    timerId = setInterval(function(){
+      elapsed++;
+      $('stTime').textContent = fmtTime(elapsed);
+    }, 1000);
+  }
+  function stopTimer(){
+    running = false;
+    if (timerId){ clearInterval(timerId); timerId = null; }
+  }
+
+  function saveState(){
+    try{
+      localStorage.setItem(STORE, JSON.stringify({
+        P: P, user: user, revealed: revealed, sel: sel,
+        elapsed: elapsed, solved: solved,
+        autoCheck: autoCheck,
+        theme: $('themeSel').value,
+        size: $('sizeSel').value
+      }));
+    } catch(e){}
+  }
+
+  function restore(){
+    var d;
+    try{ d = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch(e){ return false; }
+    if (!d || !d.P || !d.P.entries) return false;
+    P = d.P; user = d.user; revealed = d.revealed;
+    sel = d.sel || { r: 0, c: 0, dir: 'h' };
+    elapsed = d.elapsed || 0;
+    solved = !!d.solved;
+    autoCheck = !!d.autoCheck;
+    $('autoChk').checked = autoCheck;
+    if (d.theme) $('themeSel').value = d.theme;
+    if (d.size) $('sizeSel').value = d.size;
+    activeTheme = $('themeSel').value || '*';
+    activeSize = $('sizeSel').value || 'm';
+    $('stTime').textContent = fmtTime(elapsed);
+    renderBoardSkeleton();
+    buildClueLists();
+    paint();
+    return true;
+  }
+
+  /* ----------------------------- avvisi ---------------------------- */
+
+  function showOverlay(title, text, withBtn){
+    $('ovTitle').textContent = title;
+    $('ovText').textContent = text;
+    $('ovBtn').style.display = withBtn ? 'inline-block' : 'none';
+    openOv('ov');
+  }
+  function hideOverlay(){ closeOv('ov'); }
+
+  function flash(msg, bad){
+    var el = $('flash');
+    el.textContent = msg;
+    el.className = 'flash on' + (bad ? ' ko' : '');
+    clearTimeout(flash._t);
+    flash._t = setTimeout(function(){ el.className = 'flash' + (bad ? ' ko' : ''); }, 3000);
+  }
+
+  /* --------------------------- nuova partita ----------------------- */
+
+  function revertSelects(){
+    $('themeSel').value = activeTheme;
+    $('sizeSel').value = activeSize;
+  }
+
+  function newGame(){
+    var theme = $('themeSel').value;
+    var sizeKey = $('sizeSel').value;
+    var opts = SIZES[sizeKey] || SIZES.m;
+    var pool = bank.filter(function(e){ return theme === '*' || e.theme === theme; });
+
+    if (pool.length < 8){
+      flash('In questo argomento ci sono solo ' + pool.length + ' definizioni: ne servono almeno 8.', true);
+      revertSelects();
+      return;
+    }
+
+    closeAllMenus();
+    showOverlay('Genero lo schema…', 'Incastro le parole per gli incroci.', false);
+    stopTimer();
+
+    setTimeout(function(){
+      var out = null;
+      for (var t = 0; t < 12 && !out; t++){
+        out = buildPuzzle(pool, { target: Math.min(opts.target, pool.length), max: opts.max },
+                          (Date.now() ^ (t * 2654435761)) >>> 0);
+      }
+      if (!out){
+        hideOverlay();
+        flash('Non riesco a incastrare queste parole: prova un’altra misura.', true);
+        revertSelects();
+        return;
+      }
+      activeTheme = theme; activeSize = sizeKey;
+      P = out;
+      user = []; revealed = [];
+      for (var r = 0; r < P.h; r++){
+        user.push(new Array(P.w).fill(''));
+        revealed.push(new Array(P.w).fill(false));
+      }
+      elapsed = 0; solved = false; wrongFlash = null;
+      $('stTime').textContent = '0:00';
+      var first = P.entries[0];
+      sel = { r: first.r, c: first.c, dir: first.dir };
+      renderBoardSkeleton();
+      buildClueLists();
+      paint();
+      hideOverlay();
+      flash(P.entries.length + ' definizioni · griglia ' + P.w + '×' + P.h);
+    }, 60);
+  }
+
+  function started(){ return elapsed > 0 && !solved; }
+
+  /* ------------------------- gestione eventi ----------------------- */
+
+  boardEl.addEventListener('click', function(ev){
+    var t = ev.target.closest ? ev.target.closest('.cell.live') : null;
+    if (!t) return;
+    selectCell(+t.dataset.r, +t.dataset.c);
+    focusBoard();
+  });
+
+  function focusBoard(){
+    try{ boardEl.focus({ preventScroll: true }); }
+    catch(e){ boardEl.focus(); }
+  }
+
+  boardEl.addEventListener('keydown', function(ev){
+    var k = ev.key;
+    if (/^[a-zA-Z]$/.test(k)){ typeLetter(k.toUpperCase()); ev.preventDefault(); return; }
+    if (k === 'Backspace' || k === 'Delete'){ erase(); ev.preventDefault(); return; }
+    if (k === ' '){ toggleDir(); ev.preventDefault(); return; }
+    if (k === 'Tab'){ nextEntry(ev.shiftKey ? -1 : 1); paint(); ev.preventDefault(); return; }
+    var dr = 0, dc = 0;
+    if (k === 'ArrowUp') dr = -1;
+    else if (k === 'ArrowDown') dr = 1;
+    else if (k === 'ArrowLeft') dc = -1;
+    else if (k === 'ArrowRight') dc = 1;
+    else return;
+    ev.preventDefault();
+    var want = dr ? 'v' : 'h';
+    if (sel.dir !== want){
+      var oo = P.idx[sel.r][sel.c];
+      if (oo[want] !== null && oo[want] !== undefined){ sel.dir = want; paint(); return; }
+    }
+    var r = sel.r + dr, c = sel.c + dc;
+    while (r >= 0 && r < P.h && c >= 0 && c < P.w){
+      if (P.sol[r][c]){ sel.r = r; sel.c = c; paint(); return; }
+      r += dr; c += dc;
+    }
+  });
+
+  function toggleDir(){
+    var o = P.idx[sel.r][sel.c];
+    if (!o) return;
+    var other = sel.dir === 'h' ? 'v' : 'h';
+    if (o[other] !== null && o[other] !== undefined) sel.dir = other;
+    paint();
+  }
+
+  $('clueBody').addEventListener('click', toggleDir);
+  $('prevBtn').addEventListener('click', function(){ nextEntry(-1); paint(); });
+  $('nextBtn').addEventListener('click', function(){ nextEntry(1); paint(); });
+
+  /* ----- Controlla ----- */
+
+  $('checkBtn').addEventListener('click', function(){
+    var n = countWrong();
+    wrongFlash = {};
+    for (var r = 0; r < P.h; r++) for (var c = 0; c < P.w; c++){
+      if (P.sol[r][c] && user[r][c] && user[r][c] !== P.sol[r][c]) wrongFlash[K(r, c)] = 1;
+    }
+    paint();
+    flash(n === 0 ? 'Nessun errore fra le lettere inserite.'
+                  : (n === 1 ? 'Una lettera sbagliata.' : n + ' lettere sbagliate.'), n > 0);
+    setTimeout(function(){ wrongFlash = null; paint(); }, 2800);
+  });
+
+  /* ----- menù Aiuto ----- */
+
+  $('helpBtn').addEventListener('click', function(){ openOv('help'); });
+  $('helpClose').addEventListener('click', function(){ closeOv('help'); });
+
+  $('revLetBtn').addEventListener('click', function(){
+    closeOv('help');
+    if (solved) return;
+    user[sel.r][sel.c] = P.sol[sel.r][sel.c];
+    revealed[sel.r][sel.c] = true;
+    advanceAfterType();
+    paint();
+    checkSolved();
+  });
+
+  $('revWordBtn').addEventListener('click', function(){
+    closeOv('help');
+    if (solved) return;
+    var en = currentEntry();
+    if (!en) return;
+    ask('Svelare tutta la parola?',
+        'La definizione «' + en.clue + '» verrà completata da sola.',
+        function(){
+          entryCells(en).forEach(function(p){
+            user[p.r][p.c] = P.sol[p.r][p.c];
+            revealed[p.r][p.c] = true;
+          });
+          paint();
+          checkSolved();
+        });
+  });
+
+  $('listBtn').addEventListener('click', function(){
+    closeOv('help');
+    paintClueList();
+    openOv('list');
+  });
+  $('listClose').addEventListener('click', function(){ closeOv('list'); });
+
+  $('clearBtn').addEventListener('click', function(){
+    closeOv('help');
+    ask('Cancellare tutto?',
+        'Tolgo tutte le lettere ma tengo lo stesso schema.',
+        function(){
+          for (var r = 0; r < P.h; r++) for (var c = 0; c < P.w; c++){
+            user[r][c] = '';
+            revealed[r][c] = false;
+          }
+          solved = false;
+          wrongFlash = null;
+          paint();
+        });
+  });
+
+  /* ----- menù Impostazioni ----- */
+
+  $('setBtn').addEventListener('click', function(){ openOv('set'); });
+  $('setClose').addEventListener('click', function(){ closeOv('set'); });
+
+  $('newBtn').addEventListener('click', function(){
+    if (!started()){ newGame(); return; }
+    ask('Nuovo schema?', 'La partita in corso viene persa.', newGame);
+  });
+
+  $('autoChk').addEventListener('change', function(){
+    autoCheck = this.checked;
+    paint();
+  });
+
+  $('themeSel').addEventListener('change', function(){
+    if (!started()){ newGame(); return; }
+    ask('Cambiare argomento?', 'Serve un nuovo schema: la partita in corso viene persa.',
+        newGame, revertSelects);
+  });
+  $('sizeSel').addEventListener('change', function(){
+    if (!started()){ newGame(); return; }
+    ask('Cambiare misura?', 'Serve un nuovo schema: la partita in corso viene persa.',
+        newGame, revertSelects);
+  });
+
+  $('ovBtn').addEventListener('click', function(){ hideOverlay(); newGame(); });
+
+  /* il conteggio si ferma quando il tablet va in pausa e riprende al rientro */
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden) stopTimer();
+    else if (!solved && elapsed > 0) startTimer();
+  });
+
+  /* toccando fuori dal riquadro il pannello si chiude */
+  ['help', 'set', 'list', 'bank'].forEach(function(id){
+    $(id).addEventListener('click', function(ev){
+      if (ev.target === this) closeOv(id);
+    });
+  });
+
+  /* ----------------------- banca dati personale --------------------- */
+
+  var bankTxt = $('bankTxt');
+  var bankMsg = $('bankMsg');
+
+  function userBankToText(){
+    return readUserBank().map(function(e){ return e.w + ' = ' + e.clue; }).join('\n');
+  }
+
+  $('bankBtn').addEventListener('click', function(){
+    closeOv('set');
+    bankTxt.value = userBankToText();
+    bankMsg.textContent = '';
+    bankMsg.className = 'msg';
+    openOv('bank');
+  });
+
+  $('bankClose').addEventListener('click', function(){ closeOv('bank'); });
+
+  $('bankCopy').addEventListener('click', function(){
+    var t = bankTxt.value;
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(function(){
+        bankMsg.textContent = 'Elenco copiato.';
+        bankMsg.className = 'msg ok';
+      });
+    } else {
+      bankTxt.select();
+      bankMsg.textContent = 'Elenco selezionato: copialo a mano.';
+      bankMsg.className = 'msg ok';
+    }
+  });
+
+  $('bankSave').addEventListener('click', function(){
+    var lines = bankTxt.value.split(/\r?\n/);
+    var out = [], bad = [];
+    lines.forEach(function(line){
+      if (!line.trim()) return;
+      var m = line.split(/\s*[=:|]\s*/);
+      var w = normWord(m[0]);
+      var clue = (m.slice(1).join(' = ') || '').trim();
+      if (w.length < 3 || w.length > 14 || !clue){ bad.push(line.trim()); return; }
+      out.push({ w: w, clue: clue });
+    });
+    try{
+      localStorage.setItem(USERBANK, JSON.stringify(out));
+    } catch(e){
+      bankMsg.textContent = 'Non riesco a salvare sul dispositivo.';
+      bankMsg.className = 'msg ko';
+      return;
+    }
+    buildBank();
+    bankMsg.className = 'msg ' + (bad.length ? 'ko' : 'ok');
+    bankMsg.textContent = out.length + ' voci salvate' +
+      (bad.length ? ' · ' + bad.length + ' righe ignorate (formato PAROLA = definizione)' : '') +
+      '. Le trovi nell’argomento "Le mie".';
+  });
+
+  /* ------------------------------ avvio ---------------------------- */
+
+  buildBank();
+  buildKeys();
+  if (!restore()) newGame();
+  focusBoard();
+  setTimeout(fitBoard, 300);       // ricalcolo quando i caratteri sono arrivati
+  window.addEventListener('load', fitBoard);
+})();
+</script>
+</body>
+</html>
