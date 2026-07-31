@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#E7EBEC">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Crittografato">
+<meta name="format-detection" content="telephone=no">
+<title>Il messaggio crittografato dell'università di Maria Letizia</title>
+
+<!-- I caratteri decorativi si caricano senza bloccare la pagina: se il tablet
+     è offline il gioco parte lo stesso con i caratteri di sistema. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" media="print" onload="this.media='all'"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+  :root{
+    --paper:      #E7EBEC;
+    --paper-line: #C3CCD1;
+    --ink:        #1B2A3A;
+    --ink-soft:   #4C5B6B;
+    --accent:     #2F6F62;
+    --accent-soft:#DCE9E5;
+    --error:      #B3432B;
+    --error-soft: #F3DDD6;
+    --card:       #F5F7F7;
+    --cellbg:     #FCFDFD;
+
+    --hl-same: #B4D6CC;
+    --hl-sel:  #A9D0C5;
+
+    /* la misura delle caselle la calcola il JS sullo spazio disponibile */
+    --slot: 44px;
+    --tap: 56px;
+
+    --mono:  'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+    --sans:  -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+
+  *{ box-sizing:border-box; }
+
+  /* nessun riquadro del gioco deve poter mostrare barre di scorrimento:
+     i pannelli a comparsa sono l'unica eccezione, più sotto */
+  .slot .box, .punct, .alpha .a, .key, .cmds .btn, .cluebar{ overflow:hidden; }
+
+  html, body{
+    height:100%;
+    margin:0;
+    overflow:hidden;               /* niente scroll: tutto sta in una schermata */
+    overscroll-behavior:none;
+  }
+
+  body{
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--paper-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-line) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--ink);
+    font-family:var(--sans);
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+    /* su iPad il tocco prolungato non deve selezionare testo né aprire il menù */
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
+  }
+  textarea{ -webkit-user-select:text; user-select:text; }
+
+  /* ===================== impianto della schermata ===================== */
+
+  .app{
+    height:100vh;
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    padding:10px 12px;
+    padding-bottom:max(10px, env(safe-area-inset-bottom));
+  }
+
+  .topbar{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex:0 0 auto;
+  }
+  h1{
+    font-family:var(--serif);
+    font-optical-sizing:auto;
+    font-weight:700;
+    font-size:clamp(0.9rem, 2.3vw, 1.3rem);
+    line-height:1.15;
+    margin:0;
+    letter-spacing:-0.01em;
+    flex:1 1 auto;
+    min-width:0;
+  }
+  .stat{
+    font-family:var(--mono);
+    font-size:0.9rem;
+    color:var(--ink-soft);
+    white-space:nowrap;
+    display:flex;
+    gap:14px;
+    flex:0 0 auto;
+    font-variant-numeric:tabular-nums;
+  }
+  .stat b{ color:var(--ink); font-weight:700; }
+
+  .icon{
+    flex:0 0 auto;
+    width:var(--tap);
+    height:var(--tap);
+    border:1px solid var(--paper-line);
+    background:var(--cellbg);
+    border-radius:6px;
+    color:var(--ink);
+    font-size:1.5rem;
+    line-height:1;
+    cursor:pointer;
+  }
+  .icon:active{ background:var(--accent-soft); }
+
+  /* ------------------------ tabella dell'alfabeto ---------------------- */
+
+  .alpha{
+    flex:0 0 auto;
+    display:grid;
+    grid-template-columns:repeat(13, 1fr);
+    gap:3px;
+    border:1px solid var(--ink-soft);
+    background:var(--ink-soft);
+    padding:1px;
+    border-radius:4px;
+  }
+  .alpha .a{
+    background:var(--cellbg);
+    text-align:center;
+    padding:3px 0 4px;
+    line-height:1.1;
+  }
+  .alpha .a .l{
+    display:block;
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:0.95rem;
+    color:var(--ink);
+  }
+  .alpha .a .n{
+    display:block;
+    font-family:var(--mono);
+    font-size:0.8rem;
+    color:var(--accent);
+    min-height:1em;
+  }
+  .alpha .a.used{ background:var(--accent-soft); }
+  .alpha .a.given .n{ font-weight:700; }
+
+  /* ---------------------------- la frase ---------------------------- */
+
+  .phrasezone{
+    flex:1 1 auto;
+    min-height:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+  }
+  .phrase{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    align-content:center;
+    gap:calc(var(--slot) * 0.30) calc(var(--slot) * 0.34);
+    width:100%;
+  }
+  .word{ display:flex; gap:2px; }
+
+  .slot{
+    width:var(--slot);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    cursor:pointer;
+  }
+  .slot .box{
+    width:100%;
+    height:var(--slot);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--cellbg);
+    border:1px solid var(--paper-line);
+    border-bottom:2px solid var(--ink-soft);
+    border-radius:3px 3px 0 0;
+    font-family:var(--mono);
+    font-size:calc(var(--slot) * 0.56);
+    font-weight:500;
+    line-height:1;
+  }
+  .slot .n{
+    font-family:var(--mono);
+    font-size:calc(var(--slot) * 0.34);
+    line-height:1.4;
+    color:var(--ink-soft);
+  }
+  .slot.same .box{ background:var(--hl-same); }
+  .slot.sel .box{
+    background:var(--hl-sel);
+    border-color:var(--accent);
+    box-shadow:0 0 0 2px var(--accent);
+  }
+  .slot.given .box{ color:var(--accent); font-weight:700; }
+  .slot.wrong .box{ background:var(--error-soft); color:var(--error); }
+  .slot.same .n, .slot.sel .n{ color:var(--accent); font-weight:700; }
+
+  .punct{
+    align-self:flex-start;
+    height:var(--slot);
+    display:flex;
+    align-items:center;
+    font-family:var(--mono);
+    font-size:calc(var(--slot) * 0.56);
+    color:var(--ink-soft);
+    padding:0 1px;
+  }
+
+  /* ------------------- colonna comandi (sotto o a lato) ------------------- */
+
+  .sidecol{
+    flex:0 0 auto;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    min-width:0;
+  }
+
+  .cluebar{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    border:1px solid var(--paper-line);
+    background:var(--cellbg);
+    border-radius:6px;
+    min-height:var(--tap);
+    padding:6px 12px;
+    font-family:var(--mono);
+    font-size:0.95rem;
+    color:var(--ink-soft);
+    text-align:center;
+  }
+  .cluebar b{ color:var(--accent); font-size:1.15rem; }
+
+  .keys{ display:flex; flex-direction:column; gap:6px; }
+  .krow{ display:flex; gap:6px; justify-content:center; }
+  .key{
+    flex:1 1 0;
+    min-width:0;
+    height:var(--tap);
+    border:1px solid var(--paper-line);
+    background:var(--cellbg);
+    color:var(--ink);
+    border-radius:6px;
+    font-family:var(--mono);
+    font-size:1.25rem;
+    font-weight:500;
+    cursor:pointer;
+  }
+  .key:active{ background:var(--hl-sel); }
+  .key.used{ color:var(--ink-soft); opacity:0.45; }
+  @media (hover:hover){ .key:hover{ background:var(--accent-soft); } }
+  .key.wide{ flex:1.6 1 0; font-size:1.15rem; }
+
+  .cmds{ display:flex; gap:8px; }
+  .cmds .btn{ flex:1 1 0; text-align:center; }
+
+  /* --------------------- messaggio di passaggio --------------------- */
+
+  .flash{
+    position:fixed;
+    left:50%;
+    top:calc(env(safe-area-inset-top) + 12px);
+    transform:translateX(-50%);
+    max-width:88vw;
+    padding:10px 18px;
+    border-radius:8px;
+    background:var(--ink);
+    color:#fff;
+    font-family:var(--mono);
+    font-size:0.9rem;
+    text-align:center;
+    z-index:60;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.18s;
+  }
+  .flash.on{ opacity:0.95; }
+  .flash.ko{ background:var(--error); }
+
+  /* ------------------------ pannelli a comparsa ---------------------- */
+
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(27,42,58,0.34);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:70;
+  }
+  .overlay.on{ display:flex; }
+  .box{
+    background:var(--card);
+    border:1px solid var(--ink-soft);
+    border-radius:10px;
+    padding:20px;
+    max-width:560px;
+    width:100%;
+    max-height:88vh;
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+    box-shadow:0 16px 40px rgba(27,42,58,0.22);
+  }
+  .box h2{
+    font-family:var(--serif);
+    font-weight:700;
+    margin:0 0 4px;
+    font-size:1.35rem;
+  }
+  .box p{ font-size:0.95rem; line-height:1.45; color:var(--ink-soft); margin:0 0 14px; }
+  .box code{
+    font-family:var(--mono);
+    font-size:0.85rem;
+    background:var(--accent-soft);
+    padding:1px 5px;
+    border-radius:3px;
+  }
+  .solution{
+    font-family:var(--serif);
+    font-size:1.15rem;
+    line-height:1.4;
+    color:var(--ink);
+    margin:0 0 14px;
+  }
+
+  .field{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:12px 0;
+    border-bottom:1px solid var(--paper-line);
+    font-size:1rem;
+  }
+  .field .lab{ flex:1 1 auto; }
+  .field .lab small{ display:block; color:var(--ink-soft); font-size:0.85rem; margin-top:2px; }
+  select{
+    min-height:var(--tap);
+    padding:4px 10px;
+    border:1px solid var(--paper-line);
+    background:var(--cellbg);
+    color:var(--ink);
+    border-radius:6px;
+    font-family:var(--sans);
+    font-size:1rem;
+  }
+  input[type=checkbox]{ width:28px; height:28px; accent-color:var(--accent); flex:0 0 auto; }
+
+  .menu{ display:flex; flex-direction:column; gap:8px; margin-top:14px; }
+  .btn{
+    min-height:var(--tap);
+    padding:0 16px;
+    border:1px solid var(--ink-soft);
+    background:var(--cellbg);
+    color:var(--ink);
+    border-radius:6px;
+    font-family:var(--sans);
+    font-size:1.05rem;
+    font-weight:500;
+    cursor:pointer;
+    text-align:left;
+  }
+  .btn:active{ background:var(--accent-soft); }
+  .btn.primary{ background:var(--accent); border-color:var(--accent); color:#fff; text-align:center; }
+  .btn.quiet{ border-color:var(--paper-line); color:var(--ink-soft); }
+  .rowbtn{ display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+  .rowbtn .btn{ flex:1 1 0; text-align:center; }
+
+  textarea{
+    width:100%;
+    min-height:180px;
+    padding:10px;
+    border:1px solid var(--paper-line);
+    border-radius:6px;
+    background:var(--cellbg);
+    color:var(--ink);
+    font-family:var(--mono);
+    font-size:0.95rem;
+    line-height:1.5;
+    resize:vertical;
+  }
+  .msg{ font-size:0.9rem; margin:8px 0; min-height:1.2em; font-family:var(--mono); }
+  .msg.ok{ color:var(--accent); }
+  .msg.ko{ color:var(--error); }
+
+  /* ==================== tablet coricato ==================== */
+
+  @media (orientation:landscape) and (min-width:820px){
+    .alpha{ grid-template-columns:repeat(26, 1fr); }
+    .cluebar{ font-size:1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="topbar">
+    <h1>Il messaggio crittografato dell&rsquo;università di Maria Letizia</h1>
+    <div class="stat">
+      <span>Lettere <b id="stFill">0/0</b></span>
+      <span id="stTime">0:00</span>
+    </div>
+    <button class="icon" id="setBtn" aria-label="Impostazioni">&#9881;</button>
+  </div>
+
+  <div class="alpha" id="alpha"></div>
+
+  <div class="phrasezone" id="phrasezone">
+    <div class="phrase" id="phrase"></div>
+  </div>
+
+  <div class="sidecol">
+    <div class="cluebar" id="cluebar">Tocca una casella, poi scegli la lettera.</div>
+    <div class="keys" id="keys"></div>
+    <div class="cmds">
+      <button class="btn" id="checkBtn">Controlla</button>
+      <button class="btn" id="helpBtn">Aiuto</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="flash" id="flash"></div>
+
+<!-- generazione / messaggio risolto -->
+<div class="overlay" id="ov">
+  <div class="box" style="text-align:center">
+    <h2 id="ovTitle">Preparo il messaggio&hellip;</h2>
+    <p class="solution" id="ovSol"></p>
+    <p id="ovText"></p>
+    <button class="btn primary" id="ovBtn" style="display:none">Nuovo messaggio</button>
+  </div>
+</div>
+
+<!-- menù Aiuto -->
+<div class="overlay" id="help">
+  <div class="box">
+    <h2>Aiuto</h2>
+    <div class="menu">
+      <button class="btn" id="revSelBtn">Svela la lettera scelta</button>
+      <button class="btn" id="revAnyBtn">Svela una lettera a caso</button>
+      <button class="btn quiet" id="clearBtn">Cancella tutte le lettere</button>
+    </div>
+    <div class="rowbtn"><button class="btn primary" id="helpClose">Torna al gioco</button></div>
+  </div>
+</div>
+
+<!-- menù Impostazioni -->
+<div class="overlay" id="set">
+  <div class="box">
+    <h2>Impostazioni</h2>
+    <div class="field">
+      <span class="lab">Lettere regalate all&rsquo;inizio
+        <small>Più lettere si vedono, più il messaggio è facile.</small>
+      </span>
+      <select id="diffSel">
+        <option value="f">Molte (facile)</option>
+        <option value="m" selected>Alcune (medio)</option>
+        <option value="d">Poche (difficile)</option>
+      </select>
+    </div>
+    <div class="field">
+      <span class="lab">Segna subito le lettere sbagliate</span>
+      <input type="checkbox" id="autoChk">
+    </div>
+    <div class="menu">
+      <button class="btn" id="newBtn">Nuovo messaggio</button>
+      <button class="btn quiet" id="bankBtn">Le mie frasi</button>
+    </div>
+    <div class="rowbtn"><button class="btn primary" id="setClose">Torna al gioco</button></div>
+  </div>
+</div>
+
+<!-- frasi personali -->
+<div class="overlay" id="bank">
+  <div class="box">
+    <h2>Le mie frasi</h2>
+    <p>Una frase per riga. Vanno bene accenti, apostrofi e punteggiatura: restano al loro posto e non vanno indovinati. Servono almeno quindici lettere per frase. Restano salvate sul tablet e si aggiungono a quelle già presenti.</p>
+    <textarea id="bankTxt" spellcheck="false" placeholder="Chi trova un amico trova un tesoro&#10;La notte porta consiglio"></textarea>
+    <div class="msg" id="bankMsg"></div>
+    <div class="rowbtn">
+      <button class="btn primary" id="bankSave">Salva</button>
+      <button class="btn" id="bankClose">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<!-- domanda di conferma -->
+<div class="overlay" id="ask">
+  <div class="box" style="max-width:440px">
+    <h2 id="askTitle">Confermi?</h2>
+    <p id="askText"></p>
+    <div class="rowbtn">
+      <button class="btn primary" id="askOk">Sì, procedi</button>
+      <button class="btn" id="askNo">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =======================================================================
+   FRASI DA DECIFRARE
+   -----------------------------------------------------------------------
+   Una frase per riga, scritta normalmente: il gioco la porta in maiuscolo
+   da solo. Accenti, apostrofi e punteggiatura restano visibili e non
+   vanno indovinati. Per aggiungerne altre hai due strade:
+     1. scrivi qui sotto, dentro questo elenco;
+     2. usa il pulsante "Le mie frasi" dentro l'app.
+   ======================================================================= */
+var FRASI = [
+  'Chi trova un amico trova un tesoro',
+  'Non è tutto oro quel che luccica',
+  'A caval donato non si guarda in bocca',
+  'Tanto va la gatta al lardo che ci lascia lo zampino',
+  'Il mattino ha l’oro in bocca',
+  'Chi va piano va sano e va lontano',
+  'Meglio un uovo oggi che una gallina domani',
+  'L’erba del vicino è sempre più verde',
+  'Paese che vai usanza che trovi',
+  'Roma non fu fatta in un giorno',
+  'Chi semina vento raccoglie tempesta',
+  'La gatta frettolosa fece i gattini ciechi',
+  'Non dire gatto se non ce l’hai nel sacco',
+  'Aiutati che il ciel ti aiuta',
+  'Il lupo perde il pelo ma non il vizio',
+  'Acqua cheta rovina i ponti',
+  'Batti il ferro finché è caldo',
+  'Chi ha tempo non aspetti tempo',
+  'Lontano dagli occhi, lontano dal cuore',
+  'Il buon giorno si vede dal mattino',
+  'Chi ben comincia è a metà dell’opera',
+  'Tra il dire e il fare c’è di mezzo il mare',
+  'Chi ride venerdì piange la domenica',
+  'Una rondine non fa primavera',
+  'La notte porta consiglio',
+  'Chi tardi arriva male alloggia',
+  'Chi non risica non rosica',
+  'Le bugie hanno le gambe corte',
+  'Ride bene chi ride ultimo',
+  'Non rimandare a domani quello che puoi fare oggi',
+  'A buon intenditor poche parole',
+  'Finché c’è vita c’è speranza',
+  'Il primo amore non si scorda mai',
+  'Ogni promessa è debito',
+  'Anche l’occhio vuole la sua parte',
+  'Il bue che dice cornuto all’asino',
+  'Chi si loda si sbroda',
+  'Val più la pratica della grammatica',
+  'Chi lascia la strada vecchia per la nuova sa quel che lascia',
+  'Del senno di poi son piene le fosse',
+  'Ogni scarrafone è bello a mamma soja',
+  'A ognuno il suo mestiere',
+  'Nessuna nuova, buona nuova',
+  'Il riso abbonda sulla bocca degli sciocchi',
+  'Chi troppo vuole nulla stringe'
+];
+/* ======================= FINE DELL'ELENCO DELLE FRASI ================= */
+
+
+(function(){
+  'use strict';
+
+  var STORE = 'quadretti.crittografato.v1';
+  var USERBANK = 'quadretti.crittografato.miefrasi.v1';
+
+  /* quota di lettere regalate all'avvio, sulle lettere diverse presenti */
+  var DIFF = { f: 0.42, m: 0.26, d: 0.13 };
+
+  var FISSI = " ,.;:!?-’'«»\"()…";
+
+  function $(id){ return document.getElementById(id); }
+
+  /* ------------------------ utilità di base ------------------------ */
+
+  function baseOf(ch){
+    return ch.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+  }
+  function isLetter(ch){
+    var b = baseOf(ch);
+    return b.length === 1 && b >= 'A' && b <= 'Z';
+  }
+  function fmtTime(s){
+    var m = Math.floor(s / 60);
+    var r = s % 60;
+    return m + ':' + (r < 10 ? '0' : '') + r;
+  }
+  function shuffled(a){
+    a = a.slice();
+    for (var i = a.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  /* --------------------- pannelli e conferme ----------------------- */
+
+  function openOv(id){ $(id).classList.add('on'); }
+  function closeOv(id){ $(id).classList.remove('on'); }
+
+  var askCb = null, askNoCb = null;
+  function ask(title, text, onOk, onNo){
+    $('askTitle').textContent = title;
+    $('askText').textContent = text;
+    askCb = onOk || null;
+    askNoCb = onNo || null;
+    openOv('ask');
+  }
+  $('askOk').addEventListener('click', function(){
+    closeOv('ask');
+    var f = askCb; askCb = null; askNoCb = null;
+    if (f) f();
+  });
+  $('askNo').addEventListener('click', function(){
+    closeOv('ask');
+    var f = askNoCb; askCb = null; askNoCb = null;
+    if (f) f();
+  });
+
+  function flash(msg, bad){
+    var el = $('flash');
+    el.textContent = msg;
+    el.className = 'flash on' + (bad ? ' ko' : '');
+    clearTimeout(flash._t);
+    flash._t = setTimeout(function(){ el.className = 'flash' + (bad ? ' ko' : ''); }, 3000);
+  }
+
+  /* ------------------------- elenco delle frasi --------------------- */
+
+  var frasi = [];
+
+  function readUserBank(){
+    try{
+      var raw = localStorage.getItem(USERBANK);
+      return raw ? JSON.parse(raw) : [];
+    } catch(e){ return []; }
+  }
+
+  function countLetters(s){
+    var n = 0;
+    for (var i = 0; i < s.length; i++) if (isLetter(s.charAt(i))) n++;
+    return n;
+  }
+
+  function buildBank(){
+    var seen = {};
+    frasi = [];
+    FRASI.concat(readUserBank()).forEach(function(f){
+      f = (f || '').toString().trim().replace(/\s+/g, ' ');
+      if (countLetters(f) < 15) return;
+      var k = f.toUpperCase();
+      if (seen[k]) return;
+      seen[k] = true;
+      frasi.push(f);
+    });
+  }
+
+  /* ----------------------- costruzione del gioco -------------------- */
+
+  function makePuzzle(text, quota){
+    var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    var nums = shuffled(letters.map(function(_, i){ return i + 1; }));
+    var code = {}, decode = {};
+    letters.forEach(function(L, i){ code[L] = nums[i]; decode[nums[i]] = L; });
+
+    var up = text.toUpperCase();
+    var words = [], cur = [];
+    var freq = {};
+
+    for (var i = 0; i < up.length; i++){
+      var ch = up.charAt(i);
+      if (ch === ' '){
+        if (cur.length){ words.push(cur); cur = []; }
+        continue;
+      }
+      if (isLetter(ch)){
+        var b = baseOf(ch);
+        cur.push({ t: 'l', disp: ch, base: b, num: code[b] });
+        freq[b] = (freq[b] || 0) + 1;
+      } else if (FISSI.indexOf(ch) >= 0){
+        cur.push({ t: 'p', disp: ch });
+      }
+    }
+    if (cur.length) words.push(cur);
+
+    var present = Object.keys(freq);
+    if (!present.length) return null;
+
+    /* le lettere regalate sono fra le più ricorrenti: sono quelle che aiutano di più */
+    var ranked = present.slice().sort(function(a, b){ return freq[b] - freq[a]; });
+    var top = shuffled(ranked.slice(0, Math.min(ranked.length, 8)));
+    var howMany = Math.max(2, Math.min(present.length - 2, Math.round(present.length * quota)));
+    var gift = {};
+    for (var g = 0; g < howMany && g < top.length; g++) gift[code[top[g]]] = true;
+    /* se ne servono più di quante ne offre la cima della classifica, pesco fra le altre */
+    if (Object.keys(gift).length < howMany){
+      shuffled(ranked).forEach(function(L){
+        if (Object.keys(gift).length < howMany) gift[code[L]] = true;
+      });
+    }
+
+    return {
+      text: text,
+      words: words,
+      code: code,
+      decode: decode,
+      present: present.map(function(L){ return code[L]; }),
+      gift: Object.keys(gift).map(Number)
+    };
+  }
+
+  /* ---------------------------- stato ----------------------------- */
+
+  var P = null;
+  var assign = {};           // numero -> lettera scelta
+  var given = {};            // numero -> vero se regalata o svelata
+  var selNum = 0;
+  var elapsed = 0, timerId = null, running = false;
+  var autoCheck = false, wrongFlash = false, solved = false;
+  var activeDiff = 'm';
+
+  var phraseEl = $('phrase');
+  var zoneEl = $('phrasezone');
+  var alphaEl = $('alpha');
+  var slotEls = [];          // {el, box, num}
+  var alphaEls = {};         // lettera -> {el, num}
+
+  /* -------------------- la frase riempie lo spazio ------------------ */
+
+  function fitPhrase(){
+    if (!P) return;
+    var h = zoneEl.clientHeight, w = zoneEl.clientWidth;
+    /* se il riquadro non è ancora stato disposto, non rimpicciolisco a vuoto */
+    if (h < 60 || w < 60) return;
+    var root = document.documentElement;
+    /* la parola più lunga non deve sforare di lato: le parole non si spezzano */
+    for (var s = 72; s >= 22; s -= 2){
+      root.style.setProperty('--slot', s + 'px');
+      if (phraseEl.getBoundingClientRect().height <= h && phraseEl.scrollWidth <= w + 1) return;
+    }
+  }
+
+  /* due passate: la prima appena il DOM cambia, la seconda a layout assestato */
+  function fitSoon(){
+    requestAnimationFrame(function(){
+      fitPhrase();
+      requestAnimationFrame(fitPhrase);
+    });
+  }
+
+  if (window.ResizeObserver) new ResizeObserver(fitPhrase).observe(zoneEl);
+  window.addEventListener('resize', fitSoon);
+  window.addEventListener('orientationchange', function(){ setTimeout(fitSoon, 250); });
+
+  /* -------------------------- costruzione -------------------------- */
+
+  function renderAlpha(){
+    alphaEl.innerHTML = '';
+    alphaEls = {};
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(function(L){
+      var d = document.createElement('div');
+      d.className = 'a';
+      d.innerHTML = '<span class="l">' + L + '</span><span class="n"></span>';
+      alphaEl.appendChild(d);
+      alphaEls[L] = { el: d, n: d.lastChild };
+    });
+  }
+
+  function renderPhrase(){
+    phraseEl.innerHTML = '';
+    slotEls = [];
+    P.words.forEach(function(word){
+      var w = document.createElement('div');
+      w.className = 'word';
+      word.forEach(function(it){
+        if (it.t === 'p'){
+          var p = document.createElement('div');
+          p.className = 'punct';
+          p.textContent = it.disp;
+          w.appendChild(p);
+          return;
+        }
+        var s = document.createElement('div');
+        s.className = 'slot';
+        s.dataset.num = it.num;
+        var box = document.createElement('div');
+        box.className = 'box';
+        var n = document.createElement('div');
+        n.className = 'n';
+        n.textContent = it.num;
+        s.appendChild(box);
+        s.appendChild(n);
+        w.appendChild(s);
+        slotEls.push({ el: s, box: box, num: it.num, disp: it.disp });
+      });
+      phraseEl.appendChild(w);
+    });
+    fitPhrase();
+    fitSoon();
+  }
+
+  function paint(){
+    /* nel crittografato le caselle con lo stesso numero sono la stessa lettera:
+       toccandone una si accendono tutte */
+    slotEls.forEach(function(s){
+      var L = assign[s.num];
+      var right = P.decode[s.num];
+      /* con la lettera giusta rimetto l'accento dove serve */
+      s.box.textContent = L ? (L === right ? s.disp : L) : '';
+      var cls = 'slot';
+      if (given[s.num]) cls += ' given';
+      if (s.num === selNum) cls += ' sel';
+      if (L && L !== right && !given[s.num] && (autoCheck || wrongFlash)) cls += ' wrong';
+      s.el.className = cls;
+    });
+
+    // tabella dell'alfabeto
+    for (var L in alphaEls){
+      var num = 0;
+      for (var n in assign) if (assign[n] === L) num = +n;
+      alphaEls[L].n.textContent = num || '';
+      alphaEls[L].el.classList.toggle('used', !!num);
+      alphaEls[L].el.classList.toggle('given', !!(num && given[num]));
+    }
+
+    // tastiera: segno le lettere già collocate
+    document.querySelectorAll('.key[data-l]').forEach(function(k){
+      var used = false;
+      for (var n in assign) if (assign[n] === k.dataset.l) used = true;
+      k.classList.toggle('used', used);
+    });
+
+    var tot = P.present.length;
+    var fatte = P.present.filter(function(n){ return !!assign[n]; }).length;
+    $('stFill').textContent = fatte + '/' + tot;
+
+    if (selNum){
+      var quante = slotEls.filter(function(s){ return s.num === selNum; }).length;
+      $('cluebar').innerHTML = 'Numero <b>' + selNum + '</b> · compare ' +
+        quante + (quante === 1 ? ' volta' : ' volte') +
+        (given[selNum] ? ' · già svelato' : '');
+    } else {
+      $('cluebar').textContent = 'Tocca una casella, poi scegli la lettera.';
+    }
+    saveState();
+  }
+
+  /* ---------------------- selezione e scrittura --------------------- */
+
+  function selectNum(num){
+    selNum = num;
+    paint();
+  }
+
+  function nextEmpty(){
+    for (var i = 0; i < slotEls.length; i++){
+      if (!assign[slotEls[i].num]) return slotEls[i].num;
+    }
+    return selNum;
+  }
+
+  function typeLetter(L){
+    if (solved) return;
+    if (!selNum){ flash('Prima tocca una casella del messaggio.', true); return; }
+    if (given[selNum]){ flash('Quella lettera è già stata svelata.', true); selectNum(nextEmpty()); return; }
+
+    var spostata = 0;
+    for (var n in assign){
+      if (assign[n] === L && +n !== selNum){
+        if (given[n]){
+          flash('La ' + L + ' è già fissata sul numero ' + n + '.', true);
+          return;
+        }
+        spostata = +n;
+        delete assign[n];
+      }
+    }
+
+    assign[selNum] = L;
+    startTimer();
+    wrongFlash = false;
+    if (spostata) flash('La ' + L + ' era sul numero ' + spostata + ': l’ho spostata qui.');
+    selectNum(nextEmpty());
+    checkSolved();
+  }
+
+  function erase(){
+    if (solved || !selNum) return;
+    if (given[selNum]) return;
+    delete assign[selNum];
+    paint();
+  }
+
+  function checkSolved(){
+    for (var i = 0; i < P.present.length; i++){
+      var n = P.present[i];
+      if (assign[n] !== P.decode[n]) return;
+    }
+    solved = true;
+    stopTimer();
+    saveState();
+    $('ovTitle').textContent = 'Messaggio decifrato!';
+    $('ovSol').textContent = '« ' + P.text + ' »';
+    $('ovText').textContent = 'Tempo ' + fmtTime(elapsed) + '.';
+    $('ovBtn').style.display = 'inline-block';
+    openOv('ov');
+  }
+
+  function countWrong(){
+    var n = 0;
+    for (var k in assign) if (assign[k] !== P.decode[k]) n++;
+    return n;
+  }
+
+  /* ----------------------------- tastiera --------------------------- */
+
+  function buildKeys(){
+    var rows = ['ABCDEFGHI', 'JKLMNOPQR', 'STUVWXYZ'];
+    var host = $('keys');
+    host.innerHTML = '';
+    rows.forEach(function(row, ri){
+      var div = document.createElement('div');
+      div.className = 'krow';
+      row.split('').forEach(function(ch){
+        var b = document.createElement('button');
+        b.className = 'key';
+        b.type = 'button';
+        b.dataset.l = ch;
+        b.textContent = ch;
+        b.addEventListener('click', function(){ typeLetter(ch); });
+        div.appendChild(b);
+      });
+      if (ri === 2){
+        var del = document.createElement('button');
+        del.className = 'key wide';
+        del.type = 'button';
+        del.textContent = '⌫';
+        del.setAttribute('aria-label', 'Cancella');
+        del.addEventListener('click', erase);
+        div.appendChild(del);
+      }
+      host.appendChild(div);
+    });
+  }
+
+  /* ------------------------- timer e salvataggio -------------------- */
+
+  function startTimer(){
+    if (running || solved) return;
+    running = true;
+    timerId = setInterval(function(){
+      elapsed++;
+      $('stTime').textContent = fmtTime(elapsed);
+    }, 1000);
+  }
+  function stopTimer(){
+    running = false;
+    if (timerId){ clearInterval(timerId); timerId = null; }
+  }
+
+  function saveState(){
+    try{
+      localStorage.setItem(STORE, JSON.stringify({
+        P: P, assign: assign, given: given, sel: selNum,
+        elapsed: elapsed, solved: solved, autoCheck: autoCheck,
+        diff: $('diffSel').value
+      }));
+    } catch(e){}
+  }
+
+  function restore(){
+    var d;
+    try{ d = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch(e){ return false; }
+    if (!d || !d.P || !d.P.words) return false;
+    P = d.P; assign = d.assign || {}; given = d.given || {};
+    selNum = d.sel || 0;
+    elapsed = d.elapsed || 0;
+    solved = !!d.solved;
+    autoCheck = !!d.autoCheck;
+    $('autoChk').checked = autoCheck;
+    if (d.diff) $('diffSel').value = d.diff;
+    activeDiff = $('diffSel').value || 'm';
+    $('stTime').textContent = fmtTime(elapsed);
+    renderPhrase();
+    paint();
+    return true;
+  }
+
+  /* --------------------------- nuovo messaggio ---------------------- */
+
+  function newGame(){
+    closeOv('set');
+    closeOv('help');
+    var diff = $('diffSel').value;
+    var quota = DIFF[diff] || DIFF.m;
+
+    if (!frasi.length){
+      flash('Non ci sono frasi disponibili.', true);
+      return;
+    }
+
+    $('ovTitle').textContent = 'Preparo il messaggio…';
+    $('ovSol').textContent = '';
+    $('ovText').textContent = 'Mescolo i numeri delle lettere.';
+    $('ovBtn').style.display = 'none';
+    openOv('ov');
+    stopTimer();
+
+    setTimeout(function(){
+      var testo = frasi[Math.floor(Math.random() * frasi.length)];
+      /* evito di riproporre la stessa frase due volte di seguito */
+      if (P && frasi.length > 1){
+        var giri = 0;
+        while (testo === P.text && giri++ < 20) testo = frasi[Math.floor(Math.random() * frasi.length)];
+      }
+      var out = makePuzzle(testo, quota);
+      if (!out){
+        closeOv('ov');
+        flash('Non riesco a preparare questa frase.', true);
+        return;
+      }
+      activeDiff = diff;
+      P = out;
+      assign = {}; given = {};
+      P.gift.forEach(function(n){
+        assign[n] = P.decode[n];
+        given[n] = true;
+      });
+      elapsed = 0; solved = false; wrongFlash = false;
+      $('stTime').textContent = '0:00';
+      selNum = 0;
+      renderPhrase();
+      selNum = nextEmpty();
+      paint();
+      closeOv('ov');
+      flash(P.present.length + ' lettere diverse · ' + P.gift.length + ' già svelate');
+    }, 60);
+  }
+
+  function started(){ return elapsed > 0 && !solved; }
+
+  /* ------------------------- gestione eventi ----------------------- */
+
+  phraseEl.addEventListener('click', function(ev){
+    var t = ev.target.closest ? ev.target.closest('.slot') : null;
+    if (!t) return;
+    selectNum(+t.dataset.num);
+  });
+
+  document.addEventListener('keydown', function(ev){
+    if (ev.target.tagName === 'TEXTAREA' || ev.target.tagName === 'SELECT') return;
+    var k = ev.key;
+    if (/^[a-zA-Z]$/.test(k)){ typeLetter(k.toUpperCase()); ev.preventDefault(); return; }
+    if (k === 'Backspace' || k === 'Delete'){ erase(); ev.preventDefault(); }
+  });
+
+  $('checkBtn').addEventListener('click', function(){
+    var n = countWrong();
+    wrongFlash = n > 0;
+    paint();
+    flash(n === 0 ? 'Nessuna lettera sbagliata finora.'
+                  : (n === 1 ? 'Una lettera sbagliata, in rosso.' : n + ' lettere sbagliate, in rosso.'), n > 0);
+    if (n) setTimeout(function(){ wrongFlash = false; paint(); }, 2800);
+  });
+
+  /* ----- menù Aiuto ----- */
+
+  $('helpBtn').addEventListener('click', function(){ openOv('help'); });
+  $('helpClose').addEventListener('click', function(){ closeOv('help'); });
+
+  function reveal(num){
+    assign[num] = P.decode[num];
+    given[num] = true;
+    selectNum(nextEmpty());
+    checkSolved();
+  }
+
+  $('revSelBtn').addEventListener('click', function(){
+    closeOv('help');
+    if (solved) return;
+    if (!selNum){ flash('Prima tocca una casella del messaggio.', true); return; }
+    reveal(selNum);
+  });
+
+  $('revAnyBtn').addEventListener('click', function(){
+    closeOv('help');
+    if (solved) return;
+    var mancanti = P.present.filter(function(n){ return !given[n]; });
+    if (!mancanti.length) return;
+    reveal(mancanti[Math.floor(Math.random() * mancanti.length)]);
+  });
+
+  $('clearBtn').addEventListener('click', function(){
+    closeOv('help');
+    ask('Cancellare tutto?', 'Tolgo le lettere che hai messo, ma tengo lo stesso messaggio e quelle già svelate.',
+      function(){
+        for (var n in assign) if (!given[n]) delete assign[n];
+        solved = false;
+        wrongFlash = false;
+        selectNum(nextEmpty());
+      });
+  });
+
+  /* ----- menù Impostazioni ----- */
+
+  $('setBtn').addEventListener('click', function(){ openOv('set'); });
+  $('setClose').addEventListener('click', function(){ closeOv('set'); });
+
+  $('autoChk').addEventListener('change', function(){
+    autoCheck = this.checked;
+    paint();
+  });
+
+  $('newBtn').addEventListener('click', function(){
+    if (!started()){ newGame(); return; }
+    ask('Nuovo messaggio?', 'Quello in corso viene perso.', newGame);
+  });
+
+  $('diffSel').addEventListener('change', function(){
+    if (!started()){ newGame(); return; }
+    ask('Cambiare difficoltà?', 'Serve un nuovo messaggio: quello in corso viene perso.',
+      newGame,
+      function(){ $('diffSel').value = activeDiff; });
+  });
+
+  $('ovBtn').addEventListener('click', function(){ closeOv('ov'); newGame(); });
+
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden) stopTimer();
+    else if (!solved && elapsed > 0) startTimer();
+  });
+
+  ['help', 'set', 'bank'].forEach(function(id){
+    $(id).addEventListener('click', function(ev){ if (ev.target === this) closeOv(id); });
+  });
+
+  /* ----------------------- frasi personali -------------------------- */
+
+  $('bankBtn').addEventListener('click', function(){
+    closeOv('set');
+    $('bankTxt').value = readUserBank().join('\n');
+    $('bankMsg').textContent = '';
+    $('bankMsg').className = 'msg';
+    openOv('bank');
+  });
+  $('bankClose').addEventListener('click', function(){ closeOv('bank'); });
+
+  $('bankSave').addEventListener('click', function(){
+    var out = [], bad = 0;
+    $('bankTxt').value.split(/\r?\n/).forEach(function(line){
+      line = line.trim().replace(/\s+/g, ' ');
+      if (!line) return;
+      if (countLetters(line) < 15){ bad++; return; }
+      out.push(line);
+    });
+    try{
+      localStorage.setItem(USERBANK, JSON.stringify(out));
+    } catch(e){
+      $('bankMsg').textContent = 'Non riesco a salvare sul dispositivo.';
+      $('bankMsg').className = 'msg ko';
+      return;
+    }
+    buildBank();
+    $('bankMsg').className = 'msg ' + (bad ? 'ko' : 'ok');
+    $('bankMsg').textContent = out.length + ' frasi salvate' +
+      (bad ? ' · ' + bad + ' righe ignorate (troppo corte)' : '') +
+      '. In tutto ora sono ' + frasi.length + '.';
+  });
+
+  /* ------------------------------ avvio ---------------------------- */
+
+  buildBank();
+  buildKeys();
+  renderAlpha();
+  if (!restore()) newGame();
+  fitSoon();
+  setTimeout(fitPhrase, 400);       // ricalcolo quando i caratteri sono arrivati
+  setTimeout(fitPhrase, 1200);
+  window.addEventListener('load', fitSoon);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitSoon);
+})();
+</script>
+</body>
+</html>
