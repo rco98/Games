@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#E7EBEC">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Rebus">
+<meta name="format-detection" content="telephone=no">
+<title>Il rebus delle scuole elementari di Maria Letizia</title>
+
+<!-- I caratteri decorativi si caricano senza bloccare la pagina: se il tablet
+     è offline il gioco parte lo stesso con i caratteri di sistema. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" media="print" onload="this.media='all'"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+  :root{
+    --paper:      #E7EBEC;
+    --paper-line: #C3CCD1;
+    --ink:        #1B2A3A;
+    --ink-soft:   #4C5B6B;
+    --accent:     #2F6F62;
+    --accent-soft:#DCE9E5;
+    --error:      #B3432B;
+    --error-soft: #F3DDD6;
+    --card:       #F5F7F7;
+    --cellbg:     #FCFDFD;
+
+    --hl-sel: #A9D0C5;
+
+    /* le misure le calcola il JS sullo spazio disponibile */
+    --pezzo: 120px;
+    --slot: 48px;
+    --tap: 56px;
+
+    --mono:  'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+    --sans:  -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --emoji: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+  }
+
+  *{ box-sizing:border-box; }
+  .slot .box, .key, .cmds .btn, .chiave, .pezzo{ overflow:hidden; }
+
+  html, body{
+    height:100%;
+    margin:0;
+    overflow:hidden;               /* niente scroll: tutto sta in una schermata */
+    overscroll-behavior:none;
+  }
+
+  body{
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--paper-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-line) 1px, transparent 1px);
+    background-size:28px 28px;
+    color:var(--ink);
+    font-family:var(--sans);
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
+  }
+
+  /* ===================== impianto della schermata ===================== */
+
+  .app{
+    height:100vh;
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    padding:10px 12px;
+    padding-bottom:max(10px, env(safe-area-inset-bottom));
+  }
+
+  .topbar{ display:flex; align-items:center; gap:12px; flex:0 0 auto; }
+  h1{
+    font-family:var(--serif);
+    font-optical-sizing:auto;
+    font-weight:700;
+    font-size:clamp(0.95rem, 2.4vw, 1.35rem);
+    line-height:1.15;
+    margin:0;
+    letter-spacing:-0.01em;
+    flex:1 1 auto;
+    min-width:0;
+  }
+  .stat{
+    font-family:var(--mono);
+    font-size:0.9rem;
+    color:var(--ink-soft);
+    white-space:nowrap;
+    display:flex;
+    gap:14px;
+    flex:0 0 auto;
+    font-variant-numeric:tabular-nums;
+  }
+  .stat b{ color:var(--ink); font-weight:700; }
+
+  .icon{
+    flex:0 0 auto;
+    width:var(--tap);
+    height:var(--tap);
+    border:1px solid var(--paper-line);
+    background:var(--cellbg);
+    border-radius:6px;
+    color:var(--ink);
+    font-size:1.5rem;
+    line-height:1;
+    cursor:pointer;
+  }
+  .icon:active{ background:var(--accent-soft); }
+
+  /* ---------------------------- il rebus ---------------------------- */
+
+  .rebuszone{
+    flex:1 1 auto;
+    min-height:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    border:1px solid var(--paper-line);
+    background:var(--cellbg);
+    border-radius:8px;
+    padding:10px;
+  }
+  .rebus{
+    display:flex;
+    flex-wrap:nowrap;        /* i pezzi si leggono in fila: mai a capo */
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+  }
+  .pezzo{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    line-height:1;
+  }
+  .pezzo.img{
+    font-family:var(--emoji);
+    font-size:var(--pezzo);
+  }
+  .pezzo.txt{
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:calc(var(--pezzo) * 0.52);
+    letter-spacing:0.04em;
+    color:var(--ink);
+    padding:0 4px;
+  }
+  .piu{
+    font-family:var(--mono);
+    font-size:calc(var(--pezzo) * 0.30);
+    color:var(--ink-soft);
+  }
+  .nome{
+    display:block;
+    text-align:center;
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:max(0.85rem, calc(var(--pezzo) * 0.16));
+    letter-spacing:0.06em;
+    color:var(--accent);
+    margin-top:8px;
+    white-space:nowrap;
+  }
+  .pezzo.img.svelato{ flex-direction:column; }
+
+  .chiave{
+    flex:0 0 auto;
+    text-align:center;
+    font-family:var(--mono);
+    font-size:0.95rem;
+    color:var(--ink-soft);
+    letter-spacing:0.08em;
+  }
+
+  /* ------------------------ caselle soluzione ------------------------ */
+
+  .sidecol{
+    flex:0 0 auto;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    min-width:0;
+  }
+
+  .risposta{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:6px 12px;
+  }
+  .parola{ display:flex; gap:3px; }
+  .slot{ cursor:pointer; }
+  .slot .box{
+    width:var(--slot);
+    height:calc(var(--slot) * 1.15);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:var(--cellbg);
+    border:1px solid var(--paper-line);
+    border-bottom:3px solid var(--ink-soft);
+    border-radius:4px 4px 0 0;
+    font-family:var(--mono);
+    font-size:calc(var(--slot) * 0.62);
+    font-weight:500;
+    line-height:1;
+  }
+  .slot.sel .box{
+    background:var(--hl-sel);
+    border-color:var(--accent);
+    box-shadow:0 0 0 2px var(--accent);
+  }
+  .slot.given .box{ color:var(--accent); font-weight:700; }
+  .slot.wrong .box{ background:var(--error-soft); color:var(--error); }
+
+  /* --------------------------- tastiera ---------------------------- */
+
+  .keys{ display:flex; flex-direction:column; gap:6px; }
+  .krow{ display:flex; gap:6px; justify-content:center; }
+  .key{
+    flex:1 1 0;
+    min-width:0;
+    height:var(--tap);
+    border:1px solid var(--paper-line);
+    background:var(--cellbg);
+    color:var(--ink);
+    border-radius:6px;
+    font-family:var(--mono);
+    font-size:1.25rem;
+    font-weight:500;
+    cursor:pointer;
+  }
+  .key:active{ background:var(--hl-sel); }
+  @media (hover:hover){ .key:hover{ background:var(--accent-soft); } }
+  .key.wide{ flex:1.6 1 0; font-size:1.15rem; }
+
+  .cmds{ display:flex; gap:8px; }
+  .cmds .btn{ flex:1 1 0; text-align:center; }
+
+  /* --------------------- messaggio di passaggio --------------------- */
+
+  .flash{
+    position:fixed;
+    left:50%;
+    top:calc(env(safe-area-inset-top) + 12px);
+    transform:translateX(-50%);
+    max-width:88vw;
+    padding:10px 18px;
+    border-radius:8px;
+    background:var(--ink);
+    color:#fff;
+    font-family:var(--mono);
+    font-size:0.9rem;
+    text-align:center;
+    z-index:60;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.18s;
+  }
+  .flash.on{ opacity:0.95; }
+  .flash.ko{ background:var(--error); }
+
+  /* ------------------------ pannelli a comparsa ---------------------- */
+
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(27,42,58,0.34);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:70;
+  }
+  .overlay.on{ display:flex; }
+  .box{
+    background:var(--card);
+    border:1px solid var(--ink-soft);
+    border-radius:10px;
+    padding:20px;
+    max-width:560px;
+    width:100%;
+    max-height:88vh;
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+    box-shadow:0 16px 40px rgba(27,42,58,0.22);
+  }
+  .box h2{
+    font-family:var(--serif);
+    font-weight:700;
+    margin:0 0 4px;
+    font-size:1.35rem;
+  }
+  .box p{ font-size:0.95rem; line-height:1.45; color:var(--ink-soft); margin:0 0 14px; }
+  .lettura{
+    font-family:var(--mono);
+    font-size:1.15rem;
+    line-height:1.6;
+    color:var(--ink);
+    text-align:center;
+    margin:0 0 14px;
+  }
+  .lettura .em{ font-family:var(--emoji); font-size:1.5rem; vertical-align:-0.2em; }
+  .lettura b{ color:var(--accent); }
+
+  .field{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:12px 0;
+    border-bottom:1px solid var(--paper-line);
+    font-size:1rem;
+  }
+  .field .lab{ flex:1 1 auto; }
+  .field .lab small{ display:block; color:var(--ink-soft); font-size:0.85rem; margin-top:2px; }
+  input[type=checkbox]{ width:28px; height:28px; accent-color:var(--accent); flex:0 0 auto; }
+
+  .menu{ display:flex; flex-direction:column; gap:8px; margin-top:14px; }
+  .btn{
+    min-height:var(--tap);
+    padding:0 16px;
+    border:1px solid var(--ink-soft);
+    background:var(--cellbg);
+    color:var(--ink);
+    border-radius:6px;
+    font-family:var(--sans);
+    font-size:1.05rem;
+    font-weight:500;
+    cursor:pointer;
+    text-align:left;
+  }
+  .btn:active{ background:var(--accent-soft); }
+  .btn.primary{ background:var(--accent); border-color:var(--accent); color:#fff; text-align:center; }
+  .btn.quiet{ border-color:var(--paper-line); color:var(--ink-soft); }
+  .rowbtn{ display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+  .rowbtn .btn{ flex:1 1 0; text-align:center; }
+
+  /* ==================== tablet coricato: due colonne ==================== */
+
+  @media (orientation:landscape) and (min-width:820px){
+    .app{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) minmax(360px, 40%);
+      grid-template-rows:auto minmax(0,1fr);
+      column-gap:16px;
+    }
+    .topbar{ grid-column:1 / -1; }
+    .rebuszone{ grid-column:1; grid-row:2; }
+    .sidecol{
+      grid-column:2;
+      grid-row:2;
+      justify-content:center;
+      min-height:0;
+    }
+    .chiave{ display:none; }
+    .chiave.side{ display:block; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="topbar">
+    <h1>Il rebus delle scuole elementari di Maria Letizia</h1>
+    <div class="stat">
+      <span>Risolti <b id="stDone">0</b></span>
+      <span id="stTime">0:00</span>
+    </div>
+    <button class="icon" id="setBtn" aria-label="Impostazioni">&#9881;</button>
+  </div>
+
+  <div class="rebuszone" id="rebuszone">
+    <div class="rebus" id="rebus"></div>
+  </div>
+
+  <div class="sidecol">
+    <div class="chiave side" id="chiave">&mdash;</div>
+    <div class="risposta" id="risposta"></div>
+    <div class="keys" id="keys"></div>
+    <div class="cmds">
+      <button class="btn" id="checkBtn">Controlla</button>
+      <button class="btn" id="helpBtn">Aiuto</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="flash" id="flash"></div>
+
+<!-- rebus risolto -->
+<div class="overlay" id="ov">
+  <div class="box" style="text-align:center">
+    <h2 id="ovTitle">Risolto!</h2>
+    <p class="lettura" id="ovLettura"></p>
+    <p id="ovText"></p>
+    <button class="btn primary" id="ovBtn">Il prossimo rebus</button>
+  </div>
+</div>
+
+<!-- menù Aiuto -->
+<div class="overlay" id="help">
+  <div class="box">
+    <h2>Aiuto</h2>
+    <div class="menu">
+      <button class="btn" id="nomiBtn">Che cosa sono i disegni?</button>
+      <button class="btn" id="revLetBtn">Svela una lettera</button>
+      <button class="btn quiet" id="solBtn">Svela la soluzione</button>
+    </div>
+    <div class="rowbtn"><button class="btn primary" id="helpClose">Torna al gioco</button></div>
+  </div>
+</div>
+
+<!-- menù Impostazioni -->
+<div class="overlay" id="set">
+  <div class="box">
+    <h2>Impostazioni</h2>
+    <div class="field">
+      <span class="lab">Scrivi sempre il nome sotto i disegni
+        <small>Utile se qualcuno fatica a riconoscere le figure.</small>
+      </span>
+      <input type="checkbox" id="nomiChk">
+    </div>
+    <div class="field">
+      <span class="lab">Segna subito le lettere sbagliate</span>
+      <input type="checkbox" id="autoChk">
+    </div>
+    <div class="menu">
+      <button class="btn" id="skipBtn">Passa a un altro rebus</button>
+      <button class="btn quiet" id="resetBtn">Ricomincia da capo</button>
+    </div>
+    <div class="rowbtn"><button class="btn primary" id="setClose">Torna al gioco</button></div>
+  </div>
+</div>
+
+<!-- domanda di conferma -->
+<div class="overlay" id="ask">
+  <div class="box" style="max-width:440px">
+    <h2 id="askTitle">Confermi?</h2>
+    <p id="askText"></p>
+    <div class="rowbtn">
+      <button class="btn primary" id="askOk">Sì, procedi</button>
+      <button class="btn" id="askNo">Annulla</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =======================================================================
+   I REBUS
+   -----------------------------------------------------------------------
+   Ogni riga è fatta così:
+     ['SOLUZIONE', ['🐝','APE'], 'RITIVO', ...]
+   Il primo elemento è la soluzione (gli spazi separano le parole).
+   Seguono i pezzi del rebus, nell'ordine in cui si leggono:
+     ['🐝','APE']  un disegno, con accanto la parola che rappresenta
+     'RITIVO'      lettere scritte in chiaro
+   Mettendo in fila le parole dei disegni e le lettere si ottiene la
+   soluzione. Per aggiungerne uno basta scrivere una riga nuova.
+   ======================================================================= */
+var REBUS = [
+  ['APERITIVO',     ['🐝','APE'], 'RITIVO'],
+  ['APERTURA',      ['🐝','APE'], 'RTURA'],
+  ['ROSARIO',       ['🌹','ROSA'], 'RIO'],
+  ['GATTOPARDO',    ['🐈','GATTO'], 'PARDO'],
+  ['PANETTONE',     ['🍞','PANE'], 'TTONE'],
+  ['LUNA PARK',     ['🌙','LUNA'], 'PARK'],
+  ['LUNATICO',      ['🌙','LUNA'], 'TICO'],
+  ['ACQUARIO',      ['💧','ACQUA'], 'RIO'],
+  ['ACQUARELLO',    ['💧','ACQUA'], 'RELLO'],
+  ['ACQUAZZONE',    ['💧','ACQUA'], 'ZZONE'],
+  ['PINOLO',        ['🌲','PINO'], 'LO'],
+  ['UVA PASSA',     ['🍇','UVA'], 'PASSA'],
+  ['PIEDESTALLO',   ['🦶','PIEDE'], 'STALLO'],
+  ['PESCE GATTO',   ['🐟','PESCE'], ['🐈','GATTO']],
+  ['MONTE ROSA',    ['⛰️','MONTE'], ['🌹','ROSA']],
+  ['SOLENNE',       ['☀️','SOLE'], 'NNE'],
+  ['LEONESSA',      ['🦁','LEONE'], 'SSA'],
+  ['PORTAFOGLIO',   ['🚪','PORTA'], 'FOGLIO'],
+  ['PORTACENERE',   ['🚪','PORTA'], 'CENERE'],
+  ['PORTAFORTUNA',  ['🚪','PORTA'], 'FORTUNA'],
+  ['MAREA',         ['🌊','MARE'], 'A'],
+  ['MARESCIALLO',   ['🌊','MARE'], 'SCIALLO'],
+  ['MELANZANA',     ['🍎','MELA'], 'NZANA'],
+  ['MELAGRANA',     ['🍎','MELA'], 'GRANA'],
+  ['CANDELABRO',    ['🕯️','CANDELA'], 'BRO'],
+  ['AUTOSTRADA',    ['🚗','AUTO'], 'STRADA'],
+  ['AUTOBUS',       ['🚗','AUTO'], 'BUS'],
+  ['FILOSOFO',      ['🧵','FILO'], 'SOFO'],
+  ['FILOBUS',       ['🧵','FILO'], 'BUS'],
+  ['OMBRELLONE',    ['☂️','OMBRELLO'], 'NE'],
+  ['LETTORE',       ['🛏️','LETTO'], 'RE'],
+  ['GALLONE',       ['🐓','GALLO'], 'NE'],
+  ['LATTERIA',      ['🥛','LATTE'], 'RIA'],
+  ['GHIACCIOLO',    ['🧊','GHIACCIO'], 'LO'],
+  ['FORMICAIO',     ['🐜','FORMICA'], 'IO'],
+  ['PALLACANESTRO', ['⚽','PALLA'], 'CANESTRO'],
+  ['PALLAVOLO',     ['⚽','PALLA'], 'VOLO'],
+  ['PALLAMANO',     ['⚽','PALLA'], 'MANO'],
+  ['CHIAVETTA',     ['🔑','CHIAVE'], 'TTA'],
+  ['CAMPANARO',     ['🔔','CAMPANA'], 'RO'],
+  ['OSSOBUCO',      ['🦴','OSSO'], 'BUCO'],
+  ['CASALINGA',     ['🏠','CASA'], 'LINGA'],
+  ['GRANOTURCO',    ['🌾','GRANO'], 'TURCO']
+];
+/* ======================== FINE DELL'ELENCO ============================ */
+
+
+(function(){
+  'use strict';
+
+  var STORE = 'quadretti.rebus.v1';
+
+  function $(id){ return document.getElementById(id); }
+
+  /* ------------------------ utilità di base ------------------------ */
+
+  function fmtTime(s){
+    var m = Math.floor(s / 60);
+    var r = s % 60;
+    return m + ':' + (r < 10 ? '0' : '') + r;
+  }
+  function shuffledIdx(n){
+    var a = [];
+    for (var i = 0; i < n; i++) a.push(i);
+    for (var j = a.length - 1; j > 0; j--){
+      var k = Math.floor(Math.random() * (j + 1));
+      var t = a[j]; a[j] = a[k]; a[k] = t;
+    }
+    return a;
+  }
+
+  /* --------------------- pannelli e conferme ----------------------- */
+
+  function openOv(id){ $(id).classList.add('on'); }
+  function closeOv(id){ $(id).classList.remove('on'); }
+
+  var askCb = null, askNoCb = null;
+  function ask(title, text, onOk, onNo){
+    $('askTitle').textContent = title;
+    $('askText').textContent = text;
+    askCb = onOk || null;
+    askNoCb = onNo || null;
+    openOv('ask');
+  }
+  $('askOk').addEventListener('click', function(){
+    closeOv('ask');
+    var f = askCb; askCb = null; askNoCb = null;
+    if (f) f();
+  });
+  $('askNo').addEventListener('click', function(){
+    closeOv('ask');
+    var f = askNoCb; askCb = null; askNoCb = null;
+    if (f) f();
+  });
+
+  function flash(msg, bad){
+    var el = $('flash');
+    el.textContent = msg;
+    el.className = 'flash on' + (bad ? ' ko' : '');
+    clearTimeout(flash._t);
+    flash._t = setTimeout(function(){ el.className = 'flash' + (bad ? ' ko' : ''); }, 2600);
+  }
+
+  /* ---------------------------- stato ----------------------------- */
+
+  var ordine = [];        // ordine in cui proporre i rebus
+  var pos = 0;            // a che punto siamo dell'ordine
+  var R = null;           // rebus corrente
+  var lettere = [];       // {i: indice nella soluzione, ch: lettera scritta}
+  var given = {};         // indici svelati
+  var sel = 0;            // casella scelta
+  var mostraNomi = false, autoCheck = false;
+  var wrongFlash = false, risolto = false;
+  var risolti = 0;
+  var elapsed = 0, timerId = null, running = false;
+
+  var rebusEl = $('rebus');
+  var zoneEl = $('rebuszone');
+  var rispEl = $('risposta');
+  var slotEls = [];
+
+  /* --------------- il rebus e le caselle riempiono lo spazio -------- */
+
+  function fit(){
+    if (!R) return;
+    var w = zoneEl.clientWidth, h = zoneEl.clientHeight;
+    if (w < 60 || h < 60) return;
+
+    /* le caselle: tutte su una riga sola quando ci stanno */
+    var n = R.lettere.length;
+    var largh = rispEl.clientWidth || w;
+    var s = Math.floor((largh - 30 - 3 * n) / n);
+    s = Math.max(26, Math.min(s, 64));
+    document.documentElement.style.setProperty('--slot', s + 'px');
+
+    /* i disegni: il più grandi possibile, purché entrino nel riquadro */
+    var root = document.documentElement;
+    for (var p = 220; p >= 36; p -= 6){
+      root.style.setProperty('--pezzo', p + 'px');
+      var b = rebusEl.getBoundingClientRect();
+      if (b.height <= h - 20 && b.width <= w - 20) return;
+    }
+  }
+  function fitSoon(){
+    requestAnimationFrame(function(){ fit(); requestAnimationFrame(fit); });
+  }
+  if (window.ResizeObserver) new ResizeObserver(fit).observe(zoneEl);
+  window.addEventListener('resize', fitSoon);
+  window.addEventListener('orientationchange', function(){ setTimeout(fitSoon, 250); });
+
+  /* -------------------------- costruzione -------------------------- */
+
+  function prepara(riga){
+    var sol = riga[0].toUpperCase();
+    var pezzi = riga.slice(1);
+    var lett = [];      // posizioni delle lettere da indovinare
+    var parole = [];
+    var cur = [];
+    for (var i = 0; i < sol.length; i++){
+      if (sol.charAt(i) === ' '){
+        if (cur.length){ parole.push(cur); cur = []; }
+        continue;
+      }
+      cur.push({ i: i, ch: sol.charAt(i) });
+      lett.push(i);
+      }
+    if (cur.length) parole.push(cur);
+    return { sol: sol, pezzi: pezzi, parole: parole, lettere: lett };
+  }
+
+  function renderRebus(){
+    rebusEl.innerHTML = '';
+    R.pezzi.forEach(function(p, i){
+      if (i > 0){
+        var piu = document.createElement('span');
+        piu.className = 'piu';
+        piu.textContent = '+';
+        rebusEl.appendChild(piu);
+      }
+      var d = document.createElement('div');
+      if (typeof p === 'string'){
+        d.className = 'pezzo txt';
+        d.textContent = p;
+      } else {
+        d.className = 'pezzo img';
+        d.innerHTML = '<span>' + p[0] + '</span>';
+        d.dataset.nome = p[1];
+      }
+      rebusEl.appendChild(d);
+    });
+    applicaNomi();
+  }
+
+  function applicaNomi(){
+    rebusEl.querySelectorAll('.pezzo.img').forEach(function(d){
+      var gia = d.querySelector('.nome');
+      if (mostraNomi && !gia){
+        var s = document.createElement('span');
+        s.className = 'nome';
+        s.textContent = d.dataset.nome;
+        d.appendChild(s);
+        d.classList.add('svelato');
+      } else if (!mostraNomi && gia){
+        gia.remove();
+        d.classList.remove('svelato');
+      }
+    });
+    fitSoon();
+  }
+
+  function renderRisposta(){
+    rispEl.innerHTML = '';
+    slotEls = [];
+    R.parole.forEach(function(word){
+      var w = document.createElement('div');
+      w.className = 'parola';
+      word.forEach(function(it){
+        var s = document.createElement('div');
+        s.className = 'slot';
+        s.dataset.i = it.i;
+        var box = document.createElement('div');
+        box.className = 'box';
+        s.appendChild(box);
+        w.appendChild(s);
+        slotEls.push({ el: s, box: box, i: it.i, ch: it.ch });
+      });
+      rispEl.appendChild(w);
+    });
+  }
+
+  function chiaveDiLettura(){
+    var parti = R.parole.map(function(p){ return p.length; });
+    return '( ' + parti.join(' , ') + ' )';
+  }
+
+  function paint(){
+    slotEls.forEach(function(s){
+      var scritta = lettere[s.i] || '';
+      s.box.textContent = scritta;
+      var cls = 'slot';
+      if (s.i === sel) cls += ' sel';
+      if (given[s.i]) cls += ' given';
+      if (scritta && scritta !== s.ch && !given[s.i] && (autoCheck || wrongFlash)) cls += ' wrong';
+      s.el.className = cls;
+    });
+    $('chiave').textContent = chiaveDiLettura();
+    $('stDone').textContent = risolti;
+    saveState();
+  }
+
+  /* ---------------------- scrittura nelle caselle ------------------- */
+
+  function primaVuota(){
+    for (var k = 0; k < slotEls.length; k++){
+      if (!lettere[slotEls[k].i]) return slotEls[k].i;
+    }
+    return sel;
+  }
+
+  function avanza(){
+    var idx = slotEls.findIndex(function(s){ return s.i === sel; });
+    for (var k = idx + 1; k < slotEls.length; k++){
+      if (!lettere[slotEls[k].i]){ sel = slotEls[k].i; return; }
+    }
+    var p = primaVuota();
+    if (p !== sel) sel = p;
+    else if (idx + 1 < slotEls.length) sel = slotEls[idx + 1].i;
+  }
+
+  function typeLetter(L){
+    if (risolto) return;
+    if (given[sel]){ avanza(); paint(); return; }
+    lettere[sel] = L;
+    startTimer();
+    wrongFlash = false;
+    avanza();
+    paint();
+    controllaCompleto();
+  }
+
+  function erase(){
+    if (risolto) return;
+    if (given[sel]) return;
+    if (lettere[sel]) lettere[sel] = '';
+    else {
+      var idx = slotEls.findIndex(function(s){ return s.i === sel; });
+      if (idx > 0){
+        sel = slotEls[idx - 1].i;
+        if (!given[sel]) lettere[sel] = '';
+      }
+    }
+    paint();
+  }
+
+  function tuttePiene(){
+    return slotEls.every(function(s){ return !!lettere[s.i]; });
+  }
+  function tutteGiuste(){
+    return slotEls.every(function(s){ return lettere[s.i] === s.ch; });
+  }
+
+  function controllaCompleto(){
+    if (!tuttePiene()) return;
+    if (tutteGiuste()) vinci();
+    else flash('Non ci siamo ancora: guarda meglio i disegni.', true);
+  }
+
+  function letturaHtml(){
+    var parti = R.pezzi.map(function(p){
+      if (typeof p === 'string') return p;
+      return '<span class="em">' + p[0] + '</span> ' + p[1];
+    });
+    return parti.join(' + ') + ' = <b>' + R.sol + '</b>';
+  }
+
+  function vinci(){
+    risolto = true;
+    risolti++;
+    stopTimer();
+    paint();               /* così il conteggio in alto è già aggiornato */
+    saveState();
+    $('ovTitle').textContent = 'Risolto!';
+    $('ovLettura').innerHTML = letturaHtml();
+    $('ovText').textContent = 'Rebus risolti finora: ' + risolti + '.';
+    openOv('ov');
+  }
+
+  /* ----------------------------- tastiera --------------------------- */
+
+  function buildKeys(){
+    var rows = ['ABCDEFGHI', 'JKLMNOPQR', 'STUVWXYZ'];
+    var host = $('keys');
+    host.innerHTML = '';
+    rows.forEach(function(row, ri){
+      var div = document.createElement('div');
+      div.className = 'krow';
+      row.split('').forEach(function(ch){
+        var b = document.createElement('button');
+        b.className = 'key';
+        b.type = 'button';
+        b.textContent = ch;
+        b.addEventListener('click', function(){ typeLetter(ch); });
+        div.appendChild(b);
+      });
+      if (ri === 2){
+        var del = document.createElement('button');
+        del.className = 'key wide';
+        del.type = 'button';
+        del.textContent = '⌫';
+        del.setAttribute('aria-label', 'Cancella');
+        del.addEventListener('click', erase);
+        div.appendChild(del);
+      }
+      host.appendChild(div);
+    });
+  }
+
+  /* ------------------------- timer e salvataggio -------------------- */
+
+  function startTimer(){
+    if (running || risolto) return;
+    running = true;
+    timerId = setInterval(function(){
+      elapsed++;
+      $('stTime').textContent = fmtTime(elapsed);
+    }, 1000);
+  }
+  function stopTimer(){
+    running = false;
+    if (timerId){ clearInterval(timerId); timerId = null; }
+  }
+
+  function saveState(){
+    try{
+      localStorage.setItem(STORE, JSON.stringify({
+        ordine: ordine, pos: pos, lettere: lettere, given: given, sel: sel,
+        risolto: risolto, risolti: risolti, elapsed: elapsed,
+        mostraNomi: mostraNomi, autoCheck: autoCheck
+      }));
+    } catch(e){}
+  }
+
+  function restore(){
+    var d;
+    try{ d = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch(e){ return false; }
+    if (!d || !d.ordine || !d.ordine.length) return false;
+    if (d.ordine.some(function(i){ return i >= REBUS.length; })) return false;
+    ordine = d.ordine; pos = d.pos || 0;
+    lettere = d.lettere || []; given = d.given || {};
+    sel = d.sel || 0;
+    risolto = !!d.risolto; risolti = d.risolti || 0;
+    elapsed = d.elapsed || 0;
+    mostraNomi = !!d.mostraNomi; autoCheck = !!d.autoCheck;
+    $('nomiChk').checked = mostraNomi;
+    $('autoChk').checked = autoCheck;
+    $('stTime').textContent = fmtTime(elapsed);
+    R = prepara(REBUS[ordine[pos]]);
+    renderRebus();
+    renderRisposta();
+    paint();
+    fitSoon();
+    return true;
+  }
+
+  /* --------------------------- il rebus dopo ------------------------ */
+
+  function caricaRebus(){
+    R = prepara(REBUS[ordine[pos]]);
+    lettere = []; given = {};
+    risolto = false; wrongFlash = false;
+    elapsed = 0;
+    $('stTime').textContent = '0:00';
+    stopTimer();
+    renderRebus();
+    renderRisposta();
+    sel = slotEls.length ? slotEls[0].i : 0;
+    paint();
+    fitSoon();
+  }
+
+  function prossimo(){
+    closeOv('ov');
+    closeOv('set');
+    pos++;
+    if (pos >= ordine.length){
+      ordine = shuffledIdx(REBUS.length);
+      pos = 0;
+      flash('Li hai visti tutti: si ricomincia mescolando.');
+    }
+    caricaRebus();
+  }
+
+  /* ------------------------- gestione eventi ----------------------- */
+
+  rispEl.addEventListener('click', function(ev){
+    var t = ev.target.closest ? ev.target.closest('.slot') : null;
+    if (!t) return;
+    sel = +t.dataset.i;
+    paint();
+  });
+
+  document.addEventListener('keydown', function(ev){
+    if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'TEXTAREA') return;
+    var k = ev.key;
+    if (/^[a-zA-Z]$/.test(k)){ typeLetter(k.toUpperCase()); ev.preventDefault(); return; }
+    if (k === 'Backspace' || k === 'Delete'){ erase(); ev.preventDefault(); }
+  });
+
+  $('checkBtn').addEventListener('click', function(){
+    var n = 0;
+    slotEls.forEach(function(s){
+      if (lettere[s.i] && lettere[s.i] !== s.ch) n++;
+    });
+    wrongFlash = n > 0;
+    paint();
+    if (!tuttePiene() && n === 0) flash('Per ora nessun errore: vai avanti.');
+    else if (n === 0) flash('Tutto giusto!');
+    else flash(n === 1 ? 'Una lettera sbagliata, in rosso.' : n + ' lettere sbagliate, in rosso.', true);
+    if (n) setTimeout(function(){ wrongFlash = false; paint(); }, 2600);
+  });
+
+  /* ----- menù Aiuto ----- */
+
+  $('helpBtn').addEventListener('click', function(){ openOv('help'); });
+  $('helpClose').addEventListener('click', function(){ closeOv('help'); });
+
+  $('nomiBtn').addEventListener('click', function(){
+    closeOv('help');
+    var nomi = R.pezzi.filter(function(p){ return typeof p !== 'string'; })
+                      .map(function(p){ return p[0] + ' = ' + p[1]; });
+    if (!nomi.length){ flash('In questo rebus non ci sono disegni.'); return; }
+    mostraNomi = true;
+    $('nomiChk').checked = true;
+    applicaNomi();
+    flash(nomi.join(' · '));
+    saveState();
+  });
+
+  $('revLetBtn').addEventListener('click', function(){
+    closeOv('help');
+    if (risolto) return;
+    var vuote = slotEls.filter(function(s){ return lettere[s.i] !== s.ch; });
+    if (!vuote.length) return;
+    var scelta = vuote[Math.floor(Math.random() * vuote.length)];
+    lettere[scelta.i] = scelta.ch;
+    given[scelta.i] = true;
+    startTimer();
+    sel = primaVuota();
+    paint();
+    controllaCompleto();
+  });
+
+  $('solBtn').addEventListener('click', function(){
+    closeOv('help');
+    if (risolto) return;
+    ask('Svelare la soluzione?', 'Vedrai la risposta completa di questo rebus.', function(){
+      slotEls.forEach(function(s){ lettere[s.i] = s.ch; given[s.i] = true; });
+      stopTimer();
+      risolto = true;
+      paint();
+      $('ovTitle').textContent = 'La soluzione era…';
+      $('ovLettura').innerHTML = letturaHtml();
+      $('ovText').textContent = 'Rebus risolti finora: ' + risolti + '.';
+      openOv('ov');
+    });
+  });
+
+  /* ----- menù Impostazioni ----- */
+
+  $('setBtn').addEventListener('click', function(){ openOv('set'); });
+  $('setClose').addEventListener('click', function(){ closeOv('set'); });
+
+  $('nomiChk').addEventListener('change', function(){
+    mostraNomi = this.checked;
+    applicaNomi();
+    saveState();
+  });
+  $('autoChk').addEventListener('change', function(){
+    autoCheck = this.checked;
+    paint();
+  });
+
+  $('skipBtn').addEventListener('click', function(){
+    closeOv('set');
+    if (risolto || !elapsed){ prossimo(); return; }
+    ask('Passare a un altro?', 'Questo rebus resterà senza risposta.', prossimo);
+  });
+
+  $('resetBtn').addEventListener('click', function(){
+    closeOv('set');
+    ask('Ricominciare da capo?', 'Azzero il conteggio dei rebus risolti e rimescolo.', function(){
+      ordine = shuffledIdx(REBUS.length);
+      pos = 0; risolti = 0;
+      caricaRebus();
+    });
+  });
+
+  $('ovBtn').addEventListener('click', prossimo);
+
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden) stopTimer();
+    else if (!risolto && elapsed > 0) startTimer();
+  });
+
+  ['help', 'set'].forEach(function(id){
+    $(id).addEventListener('click', function(ev){ if (ev.target === this) closeOv(id); });
+  });
+
+  /* ------------------------------ avvio ---------------------------- */
+
+  buildKeys();
+  if (!restore()){
+    ordine = shuffledIdx(REBUS.length);
+    pos = 0;
+    caricaRebus();
+  }
+  fitSoon();
+  setTimeout(fit, 400);       // ricalcolo quando i caratteri sono arrivati
+  setTimeout(fit, 1200);
+  window.addEventListener('load', fitSoon);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitSoon);
+})();
+</script>
+</body>
+</html>
