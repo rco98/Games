@@ -10,8 +10,6 @@
 <meta name="format-detection" content="telephone=no">
 <title>Il rebus delle scuole elementari di Maria Letizia</title>
 
-<!-- I caratteri decorativi si caricano senza bloccare la pagina: se il tablet
-     è offline il gioco parte lo stesso con i caratteri di sistema. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" media="print" onload="this.media='all'"
@@ -32,24 +30,21 @@
 
     --hl-sel: #A9D0C5;
 
-    /* le misure le calcola il JS sullo spazio disponibile */
-    --pezzo: 120px;
-    --slot: 48px;
+    --slot: 44px;
     --tap: 56px;
 
     --mono:  'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
     --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
     --sans:  -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    --emoji: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
   }
 
   *{ box-sizing:border-box; }
-  .slot .box, .key, .cmds .btn, .chiave, .pezzo{ overflow:hidden; }
+  .slot .box, .key, .cmds .btn, .chiave{ overflow:hidden; }
 
   html, body{
     height:100%;
     margin:0;
-    overflow:hidden;               /* niente scroll: tutto sta in una schermata */
+    overflow:hidden;
     overscroll-behavior:none;
   }
 
@@ -67,6 +62,7 @@
     user-select:none;
     -webkit-touch-callout:none;
   }
+  input[type=text]{ -webkit-user-select:text; user-select:text; }
 
   /* ===================== impianto della schermata ===================== */
 
@@ -118,7 +114,7 @@
   }
   .icon:active{ background:var(--accent-soft); }
 
-  /* ---------------------------- il rebus ---------------------------- */
+  /* --------------------------- la vignetta -------------------------- */
 
   .rebuszone{
     flex:1 1 auto;
@@ -130,50 +126,28 @@
     border:1px solid var(--paper-line);
     background:var(--cellbg);
     border-radius:8px;
-    padding:10px;
+    padding:8px;
+    position:relative;
   }
-  .rebus{
-    display:flex;
-    flex-wrap:nowrap;        /* i pezzi si leggono in fila: mai a capo */
-    align-items:center;
-    justify-content:center;
-    gap:14px;
-  }
-  .pezzo{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    line-height:1;
-  }
-  .pezzo.img{
-    font-family:var(--emoji);
-    font-size:var(--pezzo);
-  }
-  .pezzo.txt{
-    font-family:var(--mono);
-    font-weight:700;
-    font-size:calc(var(--pezzo) * 0.52);
-    letter-spacing:0.04em;
-    color:var(--ink);
-    padding:0 4px;
-  }
-  .piu{
-    font-family:var(--mono);
-    font-size:calc(var(--pezzo) * 0.30);
-    color:var(--ink-soft);
-  }
-  .nome{
+  .rebuszone img{
+    max-width:100%;
+    max-height:100%;
+    width:auto;
+    height:auto;
+    object-fit:contain;
+    border-radius:4px;
     display:block;
-    text-align:center;
-    font-family:var(--mono);
-    font-weight:700;
-    font-size:max(0.85rem, calc(var(--pezzo) * 0.16));
-    letter-spacing:0.06em;
-    color:var(--accent);
-    margin-top:8px;
-    white-space:nowrap;
   }
-  .pezzo.img.svelato{ flex-direction:column; }
+  .manca{
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:1.05rem;
+    line-height:1.5;
+    padding:26px;
+    max-width:520px;
+  }
+  .manca b{ color:var(--ink); }
+  .manca .btn{ margin-top:16px; }
 
   .chiave{
     flex:0 0 auto;
@@ -181,8 +155,9 @@
     font-family:var(--mono);
     font-size:0.95rem;
     color:var(--ink-soft);
-    letter-spacing:0.08em;
+    letter-spacing:0.06em;
   }
+  .chiave b{ color:var(--accent); }
 
   /* ------------------------ caselle soluzione ------------------------ */
 
@@ -198,7 +173,7 @@
     display:flex;
     flex-wrap:wrap;
     justify-content:center;
-    gap:6px 12px;
+    gap:6px 14px;
   }
   .parola{ display:flex; gap:3px; }
   .slot{ cursor:pointer; }
@@ -248,6 +223,7 @@
 
   .cmds{ display:flex; gap:8px; }
   .cmds .btn{ flex:1 1 0; text-align:center; }
+  .cmds .btn.freccia{ flex:0 0 76px; font-size:1.5rem; padding:0; }
 
   /* --------------------- messaggio di passaggio --------------------- */
 
@@ -289,7 +265,7 @@
     border:1px solid var(--ink-soft);
     border-radius:10px;
     padding:20px;
-    max-width:560px;
+    max-width:600px;
     width:100%;
     max-height:88vh;
     overflow:auto;
@@ -302,17 +278,16 @@
     margin:0 0 4px;
     font-size:1.35rem;
   }
-  .box p{ font-size:0.95rem; line-height:1.45; color:var(--ink-soft); margin:0 0 14px; }
-  .lettura{
-    font-family:var(--mono);
-    font-size:1.15rem;
-    line-height:1.6;
-    color:var(--ink);
+  .box p{ font-size:0.95rem; line-height:1.5; color:var(--ink-soft); margin:0 0 14px; }
+  .box p.nota{ font-size:0.88rem; border-top:1px solid var(--paper-line); padding-top:12px; }
+  .soluzioneMostrata{
+    font-family:var(--serif);
+    font-weight:700;
+    font-size:1.5rem;
     text-align:center;
+    color:var(--accent);
     margin:0 0 14px;
   }
-  .lettura .em{ font-family:var(--emoji); font-size:1.5rem; vertical-align:-0.2em; }
-  .lettura b{ color:var(--accent); }
 
   .field{
     display:flex;
@@ -342,10 +317,62 @@
     text-align:left;
   }
   .btn:active{ background:var(--accent-soft); }
+  .btn:disabled{ opacity:0.35; cursor:default; }
   .btn.primary{ background:var(--accent); border-color:var(--accent); color:#fff; text-align:center; }
   .btn.quiet{ border-color:var(--paper-line); color:var(--ink-soft); }
   .rowbtn{ display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
   .rowbtn .btn{ flex:1 1 0; text-align:center; }
+
+  /* --------------- tabella per immagini e soluzioni ----------------- */
+
+  .righe{ list-style:none; margin:0; padding:0; }
+  .righe li{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px 4px;
+    border-bottom:1px solid var(--paper-line);
+  }
+  .righe li .mini{
+    flex:0 0 62px;
+    height:50px;
+    border:1px solid var(--paper-line);
+    border-radius:4px;
+    background:#fff center/contain no-repeat;
+  }
+  .righe li .mini.vuota{
+    background:var(--paper);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:1.3rem;
+    color:var(--ink-soft);
+  }
+  .righe li .dati{ flex:1 1 auto; min-width:0; }
+  .righe li .tit{
+    font-family:var(--mono);
+    font-size:0.8rem;
+    color:var(--ink-soft);
+    display:block;
+    margin-bottom:4px;
+  }
+  .righe li input[type=text]{
+    width:100%;
+    min-height:44px;
+    padding:6px 10px;
+    border:1px solid var(--paper-line);
+    border-radius:6px;
+    background:var(--cellbg);
+    color:var(--ink);
+    font-family:var(--mono);
+    font-size:1rem;
+    text-transform:uppercase;
+  }
+  .msg{ font-size:0.9rem; margin:10px 0 0; min-height:1.2em; font-family:var(--mono); }
+  .msg.ok{ color:var(--accent); }
+  .msg.ko{ color:var(--error); }
+
+  input[type=file]{ display:none; }
 
   /* ==================== tablet coricato: due colonne ==================== */
 
@@ -364,8 +391,6 @@
       justify-content:center;
       min-height:0;
     }
-    .chiave{ display:none; }
-    .chiave.side{ display:block; }
   }
 </style>
 </head>
@@ -377,22 +402,29 @@
     <h1>Il rebus delle scuole elementari di Maria Letizia</h1>
     <div class="stat">
       <span>Risolti <b id="stDone">0</b></span>
-      <span id="stTime">0:00</span>
+      <span id="stPos">1 di 8</span>
     </div>
     <button class="icon" id="setBtn" aria-label="Impostazioni">&#9881;</button>
   </div>
 
   <div class="rebuszone" id="rebuszone">
-    <div class="rebus" id="rebus"></div>
+    <img id="vignetta" alt="La vignetta del rebus" style="display:none">
+    <div class="manca" id="manca" style="display:none">
+      <p>La vignetta di questo rebus non è ancora sul tablet.<br>
+        Caricala una volta sola: resterà salvata qui.</p>
+      <button class="btn primary" id="caricaQui">Carica le vignette</button>
+    </div>
   </div>
 
   <div class="sidecol">
-    <div class="chiave side" id="chiave">&mdash;</div>
+    <div class="chiave" id="chiave">&mdash;</div>
     <div class="risposta" id="risposta"></div>
     <div class="keys" id="keys"></div>
     <div class="cmds">
+      <button class="btn freccia" id="prevBtn" aria-label="Rebus precedente">&lsaquo;</button>
       <button class="btn" id="checkBtn">Controlla</button>
       <button class="btn" id="helpBtn">Aiuto</button>
+      <button class="btn freccia" id="nextBtn" aria-label="Rebus successivo">&rsaquo;</button>
     </div>
   </div>
 
@@ -404,9 +436,12 @@
 <div class="overlay" id="ov">
   <div class="box" style="text-align:center">
     <h2 id="ovTitle">Risolto!</h2>
-    <p class="lettura" id="ovLettura"></p>
+    <p class="soluzioneMostrata" id="ovSol"></p>
     <p id="ovText"></p>
-    <button class="btn primary" id="ovBtn">Il prossimo rebus</button>
+    <div class="rowbtn">
+      <button class="btn primary" id="ovBtn">Il prossimo rebus</button>
+      <button class="btn" id="ovClose">Resta qui</button>
+    </div>
   </div>
 </div>
 
@@ -415,9 +450,9 @@
   <div class="box">
     <h2>Aiuto</h2>
     <div class="menu">
-      <button class="btn" id="nomiBtn">Che cosa sono i disegni?</button>
       <button class="btn" id="revLetBtn">Svela una lettera</button>
       <button class="btn quiet" id="solBtn">Svela la soluzione</button>
+      <button class="btn quiet" id="clearBtn">Cancella quello che ho scritto</button>
     </div>
     <div class="rowbtn"><button class="btn primary" id="helpClose">Torna al gioco</button></div>
   </div>
@@ -428,20 +463,49 @@
   <div class="box">
     <h2>Impostazioni</h2>
     <div class="field">
-      <span class="lab">Scrivi sempre il nome sotto i disegni
-        <small>Utile se qualcuno fatica a riconoscere le figure.</small>
-      </span>
-      <input type="checkbox" id="nomiChk">
-    </div>
-    <div class="field">
       <span class="lab">Segna subito le lettere sbagliate</span>
       <input type="checkbox" id="autoChk">
     </div>
     <div class="menu">
-      <button class="btn" id="skipBtn">Passa a un altro rebus</button>
-      <button class="btn quiet" id="resetBtn">Ricomincia da capo</button>
+      <button class="btn" id="imgBtn">Carica le vignette</button>
+      <button class="btn" id="solsBtn">Scrivi le soluzioni</button>
+      <button class="btn quiet" id="resetBtn">Azzera i progressi</button>
     </div>
+    <p class="nota">Le vignette e le soluzioni restano salvate su questo tablet e non vengono
+      caricate da nessuna parte.</p>
     <div class="rowbtn"><button class="btn primary" id="setClose">Torna al gioco</button></div>
+  </div>
+</div>
+
+<!-- caricamento vignette -->
+<div class="overlay" id="imgs">
+  <div class="box">
+    <h2>Le vignette</h2>
+    <p>Scegli i file delle vignette: il gioco riconosce da solo a quale rebus appartengono
+      dal nome del file (per esempio <b>rebus5.jpg</b>). Vengono rimpicciolite e salvate qui sul tablet.</p>
+    <div class="rowbtn">
+      <button class="btn primary" id="pickBtn">Scegli i file</button>
+      <button class="btn quiet" id="svuotaImgBtn">Togli tutte le vignette</button>
+    </div>
+    <input type="file" id="filePicker" accept="image/*" multiple>
+    <div class="msg" id="imgMsg"></div>
+    <ul class="righe" id="elencoImg"></ul>
+    <div class="rowbtn"><button class="btn primary" id="imgsClose">Chiudi</button></div>
+  </div>
+</div>
+
+<!-- soluzioni -->
+<div class="overlay" id="sols">
+  <div class="box">
+    <h2>Le soluzioni</h2>
+    <p>Scrivi qui la soluzione di ogni rebus: serve al gioco per dire se la risposta è giusta.
+      Il numero fra parentesi è la chiave di lettura stampata sulla vignetta.</p>
+    <ul class="righe" id="elencoSol"></ul>
+    <div class="msg" id="solMsg"></div>
+    <div class="rowbtn">
+      <button class="btn primary" id="solsSave">Salva</button>
+      <button class="btn" id="solsClose">Chiudi</button>
+    </div>
   </div>
 </div>
 
@@ -461,59 +525,25 @@
 /* =======================================================================
    I REBUS
    -----------------------------------------------------------------------
-   Ogni riga è fatta così:
-     ['SOLUZIONE', ['🐝','APE'], 'RITIVO', ...]
-   Il primo elemento è la soluzione (gli spazi separano le parole).
-   Seguono i pezzi del rebus, nell'ordine in cui si leggono:
-     ['🐝','APE']  un disegno, con accanto la parola che rappresenta
-     'RITIVO'      lettere scritte in chiaro
-   Mettendo in fila le parole dei disegni e le lettere si ottiene la
-   soluzione. Per aggiungerne uno basta scrivere una riga nuova.
+   Una riga per rebus:
+     { file, numero, chiave, autore }
+   - file    nome dell'immagine della vignetta (serve per riconoscerla
+             quando la si carica sul tablet, e per cercarla nella
+             cartella "img" accanto a questo file)
+   - chiave  la chiave di lettura stampata sulla vignetta, per esempio
+             '8 8' vuol dire due parole da otto lettere
+   - la soluzione non si scrive qui: si inserisce dal gioco, in
+     Impostazioni → Scrivi le soluzioni, e resta salvata sul tablet.
    ======================================================================= */
 var REBUS = [
-  ['APERITIVO',     ['🐝','APE'], 'RITIVO'],
-  ['APERTURA',      ['🐝','APE'], 'RTURA'],
-  ['ROSARIO',       ['🌹','ROSA'], 'RIO'],
-  ['GATTOPARDO',    ['🐈','GATTO'], 'PARDO'],
-  ['PANETTONE',     ['🍞','PANE'], 'TTONE'],
-  ['LUNA PARK',     ['🌙','LUNA'], 'PARK'],
-  ['LUNATICO',      ['🌙','LUNA'], 'TICO'],
-  ['ACQUARIO',      ['💧','ACQUA'], 'RIO'],
-  ['ACQUARELLO',    ['💧','ACQUA'], 'RELLO'],
-  ['ACQUAZZONE',    ['💧','ACQUA'], 'ZZONE'],
-  ['PINOLO',        ['🌲','PINO'], 'LO'],
-  ['UVA PASSA',     ['🍇','UVA'], 'PASSA'],
-  ['PIEDESTALLO',   ['🦶','PIEDE'], 'STALLO'],
-  ['PESCE GATTO',   ['🐟','PESCE'], ['🐈','GATTO']],
-  ['MONTE ROSA',    ['⛰️','MONTE'], ['🌹','ROSA']],
-  ['SOLENNE',       ['☀️','SOLE'], 'NNE'],
-  ['LEONESSA',      ['🦁','LEONE'], 'SSA'],
-  ['PORTAFOGLIO',   ['🚪','PORTA'], 'FOGLIO'],
-  ['PORTACENERE',   ['🚪','PORTA'], 'CENERE'],
-  ['PORTAFORTUNA',  ['🚪','PORTA'], 'FORTUNA'],
-  ['MAREA',         ['🌊','MARE'], 'A'],
-  ['MARESCIALLO',   ['🌊','MARE'], 'SCIALLO'],
-  ['MELANZANA',     ['🍎','MELA'], 'NZANA'],
-  ['MELAGRANA',     ['🍎','MELA'], 'GRANA'],
-  ['CANDELABRO',    ['🕯️','CANDELA'], 'BRO'],
-  ['AUTOSTRADA',    ['🚗','AUTO'], 'STRADA'],
-  ['AUTOBUS',       ['🚗','AUTO'], 'BUS'],
-  ['FILOSOFO',      ['🧵','FILO'], 'SOFO'],
-  ['FILOBUS',       ['🧵','FILO'], 'BUS'],
-  ['OMBRELLONE',    ['☂️','OMBRELLO'], 'NE'],
-  ['LETTORE',       ['🛏️','LETTO'], 'RE'],
-  ['GALLONE',       ['🐓','GALLO'], 'NE'],
-  ['LATTERIA',      ['🥛','LATTE'], 'RIA'],
-  ['GHIACCIOLO',    ['🧊','GHIACCIO'], 'LO'],
-  ['FORMICAIO',     ['🐜','FORMICA'], 'IO'],
-  ['PALLACANESTRO', ['⚽','PALLA'], 'CANESTRO'],
-  ['PALLAVOLO',     ['⚽','PALLA'], 'VOLO'],
-  ['PALLAMANO',     ['⚽','PALLA'], 'MANO'],
-  ['CHIAVETTA',     ['🔑','CHIAVE'], 'TTA'],
-  ['CAMPANARO',     ['🔔','CAMPANA'], 'RO'],
-  ['OSSOBUCO',      ['🦴','OSSO'], 'BUCO'],
-  ['CASALINGA',     ['🏠','CASA'], 'LINGA'],
-  ['GRANOTURCO',    ['🌾','GRANO'], 'TURCO']
+  { file: 'rebus2.jpg',  numero: '3703', chiave: '8 8',  autore: 'Cavallina' },
+  { file: 'rebus3.jpg',  numero: '4248', chiave: '7 9',  autore: 'Mentuccia' },
+  { file: 'rebus5.jpg',  numero: '4648', chiave: '7 9',  autore: 'G. Onorato' },
+  { file: 'rebus10.jpg', numero: '2',    chiave: '5 8',  autore: 'G. Corvi' },
+  { file: 'rebus12.jpg', numero: '5449', chiave: '6 6',  autore: 'Don Chisciotte' },
+  { file: 'rebus14.jpg', numero: '5604', chiave: '7 8',  autore: 'L. Petrucci' },
+  { file: 'rebus28.jpg', numero: '6416', chiave: '7 9',  autore: 'E. Laganà' },
+  { file: 'rebus30.jpg', numero: '6449', chiave: '10 5', autore: 'Ezechiello' }
 ];
 /* ======================== FINE DELL'ELENCO ============================ */
 
@@ -521,98 +551,97 @@ var REBUS = [
 (function(){
   'use strict';
 
-  var STORE = 'quadretti.rebus.v1';
+  var STATO = 'quadretti.rebus.stato.v2';
+  var IMGS  = 'quadretti.rebus.vignette.v2';
+  var SOLS  = 'quadretti.rebus.soluzioni.v2';
 
   function $(id){ return document.getElementById(id); }
 
   /* ------------------------ utilità di base ------------------------ */
 
-  function fmtTime(s){
-    var m = Math.floor(s / 60);
-    var r = s % 60;
-    return m + ':' + (r < 10 ? '0' : '') + r;
+  function normSol(s){
+    return (s || '')
+      .toUpperCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^A-Z ]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
-  function shuffledIdx(n){
-    var a = [];
-    for (var i = 0; i < n; i++) a.push(i);
-    for (var j = a.length - 1; j > 0; j--){
-      var k = Math.floor(Math.random() * (j + 1));
-      var t = a[j]; a[j] = a[k]; a[k] = t;
-    }
-    return a;
-  }
+  function soleLettere(s){ return normSol(s).replace(/ /g, ''); }
 
   /* --------------------- pannelli e conferme ----------------------- */
 
   function openOv(id){ $(id).classList.add('on'); }
   function closeOv(id){ $(id).classList.remove('on'); }
 
-  var askCb = null, askNoCb = null;
-  function ask(title, text, onOk, onNo){
+  var askCb = null;
+  function ask(title, text, onOk){
     $('askTitle').textContent = title;
     $('askText').textContent = text;
     askCb = onOk || null;
-    askNoCb = onNo || null;
     openOv('ask');
   }
   $('askOk').addEventListener('click', function(){
     closeOv('ask');
-    var f = askCb; askCb = null; askNoCb = null;
+    var f = askCb; askCb = null;
     if (f) f();
   });
-  $('askNo').addEventListener('click', function(){
-    closeOv('ask');
-    var f = askNoCb; askCb = null; askNoCb = null;
-    if (f) f();
-  });
+  $('askNo').addEventListener('click', function(){ closeOv('ask'); askCb = null; });
 
   function flash(msg, bad){
     var el = $('flash');
     el.textContent = msg;
     el.className = 'flash on' + (bad ? ' ko' : '');
     clearTimeout(flash._t);
-    flash._t = setTimeout(function(){ el.className = 'flash' + (bad ? ' ko' : ''); }, 2600);
+    flash._t = setTimeout(function(){ el.className = 'flash' + (bad ? ' ko' : ''); }, 3000);
+  }
+
+  /* ------------------- vignette salvate sul tablet ------------------ */
+
+  var vignette = {};    // nome file -> immagine in formato dati
+  var soluzioni = {};   // nome file -> soluzione scritta a mano
+
+  function leggi(chiave, vuoto){
+    try{
+      var raw = localStorage.getItem(chiave);
+      return raw ? JSON.parse(raw) : vuoto;
+    } catch(e){ return vuoto; }
+  }
+  function scrivi(chiave, valore){
+    try{
+      localStorage.setItem(chiave, JSON.stringify(valore));
+      return true;
+    } catch(e){ return false; }
   }
 
   /* ---------------------------- stato ----------------------------- */
 
-  var ordine = [];        // ordine in cui proporre i rebus
-  var pos = 0;            // a che punto siamo dell'ordine
-  var R = null;           // rebus corrente
-  var lettere = [];       // {i: indice nella soluzione, ch: lettera scritta}
-  var given = {};         // indici svelati
-  var sel = 0;            // casella scelta
-  var mostraNomi = false, autoCheck = false;
-  var wrongFlash = false, risolto = false;
-  var risolti = 0;
-  var elapsed = 0, timerId = null, running = false;
-
-  var rebusEl = $('rebus');
-  var zoneEl = $('rebuszone');
-  var rispEl = $('risposta');
+  var pos = 0;
+  var lettere = {};     // nome file -> array di lettere scritte
+  var svelate = {};     // nome file -> { indice: true }
+  var risolti = {};     // nome file -> true
+  var autoCheck = false, wrongFlash = false;
+  var sel = 0;
   var slotEls = [];
+  var parole = [];      // struttura delle caselle del rebus corrente
 
-  /* --------------- il rebus e le caselle riempiono lo spazio -------- */
+  var zoneEl = $('rebuszone');
+  var imgEl = $('vignetta');
+  var mancaEl = $('manca');
+  var rispEl = $('risposta');
+
+  function corrente(){ return REBUS[pos]; }
+
+  /* -------------------- le caselle riempiono lo spazio -------------- */
 
   function fit(){
-    if (!R) return;
-    var w = zoneEl.clientWidth, h = zoneEl.clientHeight;
-    if (w < 60 || h < 60) return;
-
-    /* le caselle: tutte su una riga sola quando ci stanno */
-    var n = R.lettere.length;
-    var largh = rispEl.clientWidth || w;
-    var s = Math.floor((largh - 30 - 3 * n) / n);
-    s = Math.max(26, Math.min(s, 64));
+    var n = 0;
+    parole.forEach(function(p){ n += p; });
+    if (!n) return;
+    var largh = rispEl.clientWidth || zoneEl.clientWidth;
+    var s = Math.floor((largh - 40 - 3 * n) / n);
+    s = Math.max(24, Math.min(s, 60));
     document.documentElement.style.setProperty('--slot', s + 'px');
-
-    /* i disegni: il più grandi possibile, purché entrino nel riquadro */
-    var root = document.documentElement;
-    for (var p = 220; p >= 36; p -= 6){
-      root.style.setProperty('--pezzo', p + 'px');
-      var b = rebusEl.getBoundingClientRect();
-      if (b.height <= h - 20 && b.width <= w - 20) return;
-    }
   }
   function fitSoon(){
     requestAnimationFrame(function(){ fit(); requestAnimationFrame(fit); });
@@ -621,130 +650,129 @@ var REBUS = [
   window.addEventListener('resize', fitSoon);
   window.addEventListener('orientationchange', function(){ setTimeout(fitSoon, 250); });
 
+  /* --------------------- struttura delle caselle -------------------- */
+
+  function struttura(r){
+    var sol = soluzioni[r.file];
+    if (sol && soleLettere(sol).length){
+      /* con la soluzione scritta le caselle seguono le sue parole */
+      return normSol(sol).split(' ').map(function(p){ return p.length; });
+    }
+    /* altrimenti seguono la chiave di lettura stampata sulla vignetta */
+    return r.chiave.split(/\s+/).map(Number).filter(function(x){ return x > 0; });
+  }
+
+  function letteraGiusta(i){
+    var sol = soluzioni[corrente().file];
+    if (!sol) return null;
+    var l = soleLettere(sol);
+    return i < l.length ? l.charAt(i) : null;
+  }
+
   /* -------------------------- costruzione -------------------------- */
 
-  function prepara(riga){
-    var sol = riga[0].toUpperCase();
-    var pezzi = riga.slice(1);
-    var lett = [];      // posizioni delle lettere da indovinare
-    var parole = [];
-    var cur = [];
-    for (var i = 0; i < sol.length; i++){
-      if (sol.charAt(i) === ' '){
-        if (cur.length){ parole.push(cur); cur = []; }
-        continue;
-      }
-      cur.push({ i: i, ch: sol.charAt(i) });
-      lett.push(i);
-      }
-    if (cur.length) parole.push(cur);
-    return { sol: sol, pezzi: pezzi, parole: parole, lettere: lett };
-  }
-
-  function renderRebus(){
-    rebusEl.innerHTML = '';
-    R.pezzi.forEach(function(p, i){
-      if (i > 0){
-        var piu = document.createElement('span');
-        piu.className = 'piu';
-        piu.textContent = '+';
-        rebusEl.appendChild(piu);
-      }
-      var d = document.createElement('div');
-      if (typeof p === 'string'){
-        d.className = 'pezzo txt';
-        d.textContent = p;
-      } else {
-        d.className = 'pezzo img';
-        d.innerHTML = '<span>' + p[0] + '</span>';
-        d.dataset.nome = p[1];
-      }
-      rebusEl.appendChild(d);
-    });
-    applicaNomi();
-  }
-
-  function applicaNomi(){
-    rebusEl.querySelectorAll('.pezzo.img').forEach(function(d){
-      var gia = d.querySelector('.nome');
-      if (mostraNomi && !gia){
-        var s = document.createElement('span');
-        s.className = 'nome';
-        s.textContent = d.dataset.nome;
-        d.appendChild(s);
-        d.classList.add('svelato');
-      } else if (!mostraNomi && gia){
-        gia.remove();
-        d.classList.remove('svelato');
-      }
-    });
-    fitSoon();
+  function mostraVignetta(){
+    var r = corrente();
+    var dati = vignette[r.file];
+    if (dati){
+      imgEl.src = dati;
+      imgEl.style.display = '';
+      mancaEl.style.display = 'none';
+      return;
+    }
+    /* se il gioco sta in una cartella che contiene anche "img", la prendo da lì */
+    imgEl.onerror = function(){
+      imgEl.onerror = null;
+      imgEl.style.display = 'none';
+      mancaEl.style.display = '';
+    };
+    imgEl.onload = function(){
+      imgEl.style.display = '';
+      mancaEl.style.display = 'none';
+    };
+    imgEl.src = 'img/' + r.file;
   }
 
   function renderRisposta(){
+    var r = corrente();
+    parole = struttura(r);
     rispEl.innerHTML = '';
     slotEls = [];
-    R.parole.forEach(function(word){
+    var i = 0;
+    parole.forEach(function(quante){
       var w = document.createElement('div');
       w.className = 'parola';
-      word.forEach(function(it){
+      for (var k = 0; k < quante; k++){
         var s = document.createElement('div');
         s.className = 'slot';
-        s.dataset.i = it.i;
+        s.dataset.i = i;
         var box = document.createElement('div');
         box.className = 'box';
         s.appendChild(box);
         w.appendChild(s);
-        slotEls.push({ el: s, box: box, i: it.i, ch: it.ch });
-      });
+        slotEls.push({ el: s, box: box, i: i });
+        i++;
+      }
       rispEl.appendChild(w);
     });
-  }
-
-  function chiaveDiLettura(){
-    var parti = R.parole.map(function(p){ return p.length; });
-    return '( ' + parti.join(' , ') + ' )';
+    if (!lettere[r.file]) lettere[r.file] = [];
+    if (!svelate[r.file]) svelate[r.file] = {};
+    fitSoon();
   }
 
   function paint(){
+    var r = corrente();
+    var mie = lettere[r.file] || [];
+    var giaSvelate = svelate[r.file] || {};
+
     slotEls.forEach(function(s){
-      var scritta = lettere[s.i] || '';
-      s.box.textContent = scritta;
+      var ch = mie[s.i] || '';
+      s.box.textContent = ch;
+      var giusta = letteraGiusta(s.i);
       var cls = 'slot';
       if (s.i === sel) cls += ' sel';
-      if (given[s.i]) cls += ' given';
-      if (scritta && scritta !== s.ch && !given[s.i] && (autoCheck || wrongFlash)) cls += ' wrong';
+      if (giaSvelate[s.i]) cls += ' given';
+      if (ch && giusta && ch !== giusta && !giaSvelate[s.i] && (autoCheck || wrongFlash)) cls += ' wrong';
       s.el.className = cls;
     });
-    $('chiave').textContent = chiaveDiLettura();
-    $('stDone').textContent = risolti;
-    saveState();
+
+    var haSol = !!(soluzioni[r.file] && soleLettere(soluzioni[r.file]).length);
+    $('chiave').innerHTML = 'Rebus <b>' + r.numero + '</b> · ' + r.autore +
+      ' · chiave di lettura <b>(' + r.chiave + ')</b>' +
+      (haSol ? '' : ' · <span style="color:var(--error)">soluzione da scrivere</span>');
+
+    $('stPos').textContent = (pos + 1) + ' di ' + REBUS.length;
+    $('stDone').textContent = Object.keys(risolti).length;
+    $('prevBtn').disabled = pos === 0;
+    $('nextBtn').disabled = pos === REBUS.length - 1;
+    salva();
   }
 
   /* ---------------------- scrittura nelle caselle ------------------- */
 
   function primaVuota(){
+    var mie = lettere[corrente().file] || [];
     for (var k = 0; k < slotEls.length; k++){
-      if (!lettere[slotEls[k].i]) return slotEls[k].i;
+      if (!mie[slotEls[k].i]) return slotEls[k].i;
     }
     return sel;
   }
 
   function avanza(){
-    var idx = slotEls.findIndex(function(s){ return s.i === sel; });
-    for (var k = idx + 1; k < slotEls.length; k++){
-      if (!lettere[slotEls[k].i]){ sel = slotEls[k].i; return; }
+    var mie = lettere[corrente().file] || [];
+    for (var k = sel + 1; k < slotEls.length; k++){
+      if (!mie[k]){ sel = k; return; }
     }
     var p = primaVuota();
-    if (p !== sel) sel = p;
-    else if (idx + 1 < slotEls.length) sel = slotEls[idx + 1].i;
+    sel = (p !== sel) ? p : Math.min(sel + 1, slotEls.length - 1);
   }
 
   function typeLetter(L){
-    if (risolto) return;
-    if (given[sel]){ avanza(); paint(); return; }
-    lettere[sel] = L;
-    startTimer();
+    var r = corrente();
+    if (risolti[r.file]) return;
+    if ((svelate[r.file] || {})[sel]){ avanza(); paint(); return; }
+    if (!lettere[r.file]) lettere[r.file] = [];
+    lettere[r.file][sel] = L;
     wrongFlash = false;
     avanza();
     paint();
@@ -752,49 +780,47 @@ var REBUS = [
   }
 
   function erase(){
-    if (risolto) return;
-    if (given[sel]) return;
-    if (lettere[sel]) lettere[sel] = '';
-    else {
-      var idx = slotEls.findIndex(function(s){ return s.i === sel; });
-      if (idx > 0){
-        sel = slotEls[idx - 1].i;
-        if (!given[sel]) lettere[sel] = '';
-      }
+    var r = corrente();
+    if (risolti[r.file]) return;
+    var mie = lettere[r.file] || [];
+    if ((svelate[r.file] || {})[sel]) return;
+    if (mie[sel]) mie[sel] = '';
+    else if (sel > 0){
+      sel--;
+      if (!(svelate[r.file] || {})[sel]) mie[sel] = '';
     }
     paint();
   }
 
-  function tuttePiene(){
-    return slotEls.every(function(s){ return !!lettere[s.i]; });
+  function scritto(){
+    var mie = lettere[corrente().file] || [];
+    var s = '';
+    for (var k = 0; k < slotEls.length; k++) s += (mie[k] || '');
+    return s;
   }
-  function tutteGiuste(){
-    return slotEls.every(function(s){ return lettere[s.i] === s.ch; });
+
+  function tuttePiene(){
+    var mie = lettere[corrente().file] || [];
+    for (var k = 0; k < slotEls.length; k++) if (!mie[k]) return false;
+    return true;
   }
 
   function controllaCompleto(){
-    if (!tuttePiene()) return;
-    if (tutteGiuste()) vinci();
-    else flash('Non ci siamo ancora: guarda meglio i disegni.', true);
-  }
-
-  function letturaHtml(){
-    var parti = R.pezzi.map(function(p){
-      if (typeof p === 'string') return p;
-      return '<span class="em">' + p[0] + '</span> ' + p[1];
-    });
-    return parti.join(' + ') + ' = <b>' + R.sol + '</b>';
+    var r = corrente();
+    var sol = soluzioni[r.file];
+    if (!sol || !tuttePiene()) return;
+    if (scritto() === soleLettere(sol)) vinci();
+    else flash('Non ci siamo ancora: guarda meglio la vignetta.', true);
   }
 
   function vinci(){
-    risolto = true;
-    risolti++;
-    stopTimer();
-    paint();               /* così il conteggio in alto è già aggiornato */
-    saveState();
+    var r = corrente();
+    if (!risolti[r.file]) risolti[r.file] = true;
+    paint();
     $('ovTitle').textContent = 'Risolto!';
-    $('ovLettura').innerHTML = letturaHtml();
-    $('ovText').textContent = 'Rebus risolti finora: ' + risolti + '.';
+    $('ovSol').textContent = normSol(soluzioni[r.file]);
+    $('ovText').textContent = 'Rebus risolti finora: ' + Object.keys(risolti).length +
+      ' su ' + REBUS.length + '.';
     openOv('ov');
   }
 
@@ -828,79 +854,35 @@ var REBUS = [
     });
   }
 
-  /* ------------------------- timer e salvataggio -------------------- */
+  /* ------------------------- salvataggio ---------------------------- */
 
-  function startTimer(){
-    if (running || risolto) return;
-    running = true;
-    timerId = setInterval(function(){
-      elapsed++;
-      $('stTime').textContent = fmtTime(elapsed);
-    }, 1000);
-  }
-  function stopTimer(){
-    running = false;
-    if (timerId){ clearInterval(timerId); timerId = null; }
+  function salva(){
+    scrivi(STATO, { pos: pos, lettere: lettere, svelate: svelate,
+                    risolti: risolti, autoCheck: autoCheck });
   }
 
-  function saveState(){
-    try{
-      localStorage.setItem(STORE, JSON.stringify({
-        ordine: ordine, pos: pos, lettere: lettere, given: given, sel: sel,
-        risolto: risolto, risolti: risolti, elapsed: elapsed,
-        mostraNomi: mostraNomi, autoCheck: autoCheck
-      }));
-    } catch(e){}
-  }
-
-  function restore(){
-    var d;
-    try{ d = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch(e){ return false; }
-    if (!d || !d.ordine || !d.ordine.length) return false;
-    if (d.ordine.some(function(i){ return i >= REBUS.length; })) return false;
-    ordine = d.ordine; pos = d.pos || 0;
-    lettere = d.lettere || []; given = d.given || {};
-    sel = d.sel || 0;
-    risolto = !!d.risolto; risolti = d.risolti || 0;
-    elapsed = d.elapsed || 0;
-    mostraNomi = !!d.mostraNomi; autoCheck = !!d.autoCheck;
-    $('nomiChk').checked = mostraNomi;
+  function ripristina(){
+    var d = leggi(STATO, null);
+    vignette = leggi(IMGS, {});
+    soluzioni = leggi(SOLS, {});
+    if (!d) return;
+    pos = Math.min(d.pos || 0, REBUS.length - 1);
+    lettere = d.lettere || {};
+    svelate = d.svelate || {};
+    risolti = d.risolti || {};
+    autoCheck = !!d.autoCheck;
     $('autoChk').checked = autoCheck;
-    $('stTime').textContent = fmtTime(elapsed);
-    R = prepara(REBUS[ordine[pos]]);
-    renderRebus();
-    renderRisposta();
-    paint();
-    fitSoon();
-    return true;
   }
 
-  /* --------------------------- il rebus dopo ------------------------ */
+  /* ------------------------ cambio di rebus ------------------------- */
 
-  function caricaRebus(){
-    R = prepara(REBUS[ordine[pos]]);
-    lettere = []; given = {};
-    risolto = false; wrongFlash = false;
-    elapsed = 0;
-    $('stTime').textContent = '0:00';
-    stopTimer();
-    renderRebus();
+  function vai(nuovo){
+    pos = Math.max(0, Math.min(nuovo, REBUS.length - 1));
+    wrongFlash = false;
+    mostraVignetta();
     renderRisposta();
-    sel = slotEls.length ? slotEls[0].i : 0;
+    sel = primaVuota();
     paint();
-    fitSoon();
-  }
-
-  function prossimo(){
-    closeOv('ov');
-    closeOv('set');
-    pos++;
-    if (pos >= ordine.length){
-      ordine = shuffledIdx(REBUS.length);
-      pos = 0;
-      flash('Li hai visti tutti: si ricomincia mescolando.');
-    }
-    caricaRebus();
   }
 
   /* ------------------------- gestione eventi ----------------------- */
@@ -916,20 +898,32 @@ var REBUS = [
     if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'TEXTAREA') return;
     var k = ev.key;
     if (/^[a-zA-Z]$/.test(k)){ typeLetter(k.toUpperCase()); ev.preventDefault(); return; }
-    if (k === 'Backspace' || k === 'Delete'){ erase(); ev.preventDefault(); }
+    if (k === 'Backspace' || k === 'Delete'){ erase(); ev.preventDefault(); return; }
+    if (k === 'ArrowLeft'){ $('prevBtn').click(); ev.preventDefault(); }
+    else if (k === 'ArrowRight'){ $('nextBtn').click(); ev.preventDefault(); }
   });
 
+  $('prevBtn').addEventListener('click', function(){ if (pos > 0) vai(pos - 1); });
+  $('nextBtn').addEventListener('click', function(){ if (pos < REBUS.length - 1) vai(pos + 1); });
+
   $('checkBtn').addEventListener('click', function(){
+    var r = corrente();
+    var sol = soluzioni[r.file];
+    if (!sol || !soleLettere(sol).length){
+      flash('Per questo rebus la soluzione non è ancora stata scritta.', true);
+      return;
+    }
+    var mie = lettere[r.file] || [];
     var n = 0;
-    slotEls.forEach(function(s){
-      if (lettere[s.i] && lettere[s.i] !== s.ch) n++;
-    });
+    for (var k = 0; k < slotEls.length; k++){
+      if (mie[k] && mie[k] !== letteraGiusta(k)) n++;
+    }
     wrongFlash = n > 0;
     paint();
-    if (!tuttePiene() && n === 0) flash('Per ora nessun errore: vai avanti.');
-    else if (n === 0) flash('Tutto giusto!');
+    if (n === 0 && tuttePiene()) vinci();
+    else if (n === 0) flash('Per ora nessun errore: vai avanti.');
     else flash(n === 1 ? 'Una lettera sbagliata, in rosso.' : n + ' lettere sbagliate, in rosso.', true);
-    if (n) setTimeout(function(){ wrongFlash = false; paint(); }, 2600);
+    if (n) setTimeout(function(){ wrongFlash = false; paint(); }, 2800);
   });
 
   /* ----- menù Aiuto ----- */
@@ -937,27 +931,20 @@ var REBUS = [
   $('helpBtn').addEventListener('click', function(){ openOv('help'); });
   $('helpClose').addEventListener('click', function(){ closeOv('help'); });
 
-  $('nomiBtn').addEventListener('click', function(){
-    closeOv('help');
-    var nomi = R.pezzi.filter(function(p){ return typeof p !== 'string'; })
-                      .map(function(p){ return p[0] + ' = ' + p[1]; });
-    if (!nomi.length){ flash('In questo rebus non ci sono disegni.'); return; }
-    mostraNomi = true;
-    $('nomiChk').checked = true;
-    applicaNomi();
-    flash(nomi.join(' · '));
-    saveState();
-  });
-
   $('revLetBtn').addEventListener('click', function(){
     closeOv('help');
-    if (risolto) return;
-    var vuote = slotEls.filter(function(s){ return lettere[s.i] !== s.ch; });
-    if (!vuote.length) return;
-    var scelta = vuote[Math.floor(Math.random() * vuote.length)];
-    lettere[scelta.i] = scelta.ch;
-    given[scelta.i] = true;
-    startTimer();
+    var r = corrente();
+    if (!soluzioni[r.file]){ flash('Prima va scritta la soluzione di questo rebus.', true); return; }
+    if (risolti[r.file]) return;
+    var mie = lettere[r.file] || (lettere[r.file] = []);
+    var mancanti = [];
+    for (var k = 0; k < slotEls.length; k++){
+      if (mie[k] !== letteraGiusta(k)) mancanti.push(k);
+    }
+    if (!mancanti.length) return;
+    var scelto = mancanti[Math.floor(Math.random() * mancanti.length)];
+    mie[scelto] = letteraGiusta(scelto);
+    svelate[r.file][scelto] = true;
     sel = primaVuota();
     paint();
     controllaCompleto();
@@ -965,71 +952,247 @@ var REBUS = [
 
   $('solBtn').addEventListener('click', function(){
     closeOv('help');
-    if (risolto) return;
+    var r = corrente();
+    if (!soluzioni[r.file]){ flash('Prima va scritta la soluzione di questo rebus.', true); return; }
     ask('Svelare la soluzione?', 'Vedrai la risposta completa di questo rebus.', function(){
-      slotEls.forEach(function(s){ lettere[s.i] = s.ch; given[s.i] = true; });
-      stopTimer();
-      risolto = true;
+      var mie = lettere[r.file] || (lettere[r.file] = []);
+      for (var k = 0; k < slotEls.length; k++){
+        mie[k] = letteraGiusta(k);
+        svelate[r.file][k] = true;
+      }
       paint();
       $('ovTitle').textContent = 'La soluzione era…';
-      $('ovLettura').innerHTML = letturaHtml();
-      $('ovText').textContent = 'Rebus risolti finora: ' + risolti + '.';
+      $('ovSol').textContent = normSol(soluzioni[r.file]);
+      $('ovText').textContent = 'Rebus risolti finora: ' + Object.keys(risolti).length +
+        ' su ' + REBUS.length + '.';
       openOv('ov');
     });
   });
+
+  $('clearBtn').addEventListener('click', function(){
+    closeOv('help');
+    var r = corrente();
+    ask('Cancellare?', 'Tolgo le lettere scritte per questo rebus.', function(){
+      lettere[r.file] = [];
+      svelate[r.file] = {};
+      delete risolti[r.file];
+      wrongFlash = false;
+      sel = 0;
+      paint();
+    });
+  });
+
+  $('ovBtn').addEventListener('click', function(){
+    closeOv('ov');
+    if (pos < REBUS.length - 1) vai(pos + 1);
+  });
+  $('ovClose').addEventListener('click', function(){ closeOv('ov'); });
 
   /* ----- menù Impostazioni ----- */
 
   $('setBtn').addEventListener('click', function(){ openOv('set'); });
   $('setClose').addEventListener('click', function(){ closeOv('set'); });
 
-  $('nomiChk').addEventListener('change', function(){
-    mostraNomi = this.checked;
-    applicaNomi();
-    saveState();
-  });
   $('autoChk').addEventListener('change', function(){
     autoCheck = this.checked;
     paint();
   });
 
-  $('skipBtn').addEventListener('click', function(){
-    closeOv('set');
-    if (risolto || !elapsed){ prossimo(); return; }
-    ask('Passare a un altro?', 'Questo rebus resterà senza risposta.', prossimo);
-  });
-
   $('resetBtn').addEventListener('click', function(){
     closeOv('set');
-    ask('Ricominciare da capo?', 'Azzero il conteggio dei rebus risolti e rimescolo.', function(){
-      ordine = shuffledIdx(REBUS.length);
-      pos = 0; risolti = 0;
-      caricaRebus();
+    ask('Azzerare i progressi?', 'Tolgo le lettere scritte e i rebus segnati come risolti. Vignette e soluzioni restano.',
+      function(){
+        lettere = {}; svelate = {}; risolti = {};
+        pos = 0;
+        vai(0);
+      });
+  });
+
+  ['help', 'set', 'imgs', 'sols'].forEach(function(id){
+    $(id).addEventListener('click', function(ev){ if (ev.target === this) closeOv(id); });
+  });
+
+  /* --------------------- caricamento delle vignette ------------------ */
+
+  function apriImmagini(){
+    closeOv('set');
+    $('imgMsg').textContent = '';
+    $('imgMsg').className = 'msg';
+    disegnaElencoImg();
+    openOv('imgs');
+  }
+  $('imgBtn').addEventListener('click', apriImmagini);
+  $('caricaQui').addEventListener('click', apriImmagini);
+  $('imgsClose').addEventListener('click', function(){ closeOv('imgs'); mostraVignetta(); });
+  $('pickBtn').addEventListener('click', function(){ $('filePicker').click(); });
+
+  function disegnaElencoImg(){
+    var ul = $('elencoImg');
+    ul.innerHTML = '';
+    REBUS.forEach(function(r){
+      var li = document.createElement('li');
+      var mini = document.createElement('div');
+      if (vignette[r.file]){
+        mini.className = 'mini';
+        mini.style.backgroundImage = 'url(' + vignette[r.file] + ')';
+      } else {
+        mini.className = 'mini vuota';
+        mini.textContent = '—';
+      }
+      var dati = document.createElement('div');
+      dati.className = 'dati';
+      dati.innerHTML = '<span class="tit"></span>';
+      dati.querySelector('.tit').textContent =
+        r.file + ' · rebus ' + r.numero + ' · (' + r.chiave + ')' +
+        (vignette[r.file] ? ' · caricata' : ' · manca');
+      li.appendChild(mini);
+      li.appendChild(dati);
+      ul.appendChild(li);
+    });
+  }
+
+  function numeroDelFile(nome){
+    var m = String(nome).toLowerCase().match(/rebus[^0-9]*(\d+)/);
+    return m ? m[1] : null;
+  }
+
+  function ridimensiona(file, cb){
+    var fr = new FileReader();
+    fr.onload = function(){
+      var img = new Image();
+      img.onload = function(){
+        var max = 1200;
+        var k = Math.min(1, max / Math.max(img.width, img.height));
+        var c = document.createElement('canvas');
+        c.width = Math.round(img.width * k);
+        c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        try{ cb(c.toDataURL('image/jpeg', 0.82)); }
+        catch(e){ cb(null); }
+      };
+      img.onerror = function(){ cb(null); };
+      img.src = fr.result;
+    };
+    fr.onerror = function(){ cb(null); };
+    fr.readAsDataURL(file);
+  }
+
+  $('filePicker').addEventListener('change', function(){
+    var files = Array.prototype.slice.call(this.files || []);
+    if (!files.length) return;
+    var fatte = 0, ignorate = [], restano = files.length;
+    $('imgMsg').className = 'msg';
+    $('imgMsg').textContent = 'Sto preparando le vignette…';
+
+    files.forEach(function(f){
+      var num = numeroDelFile(f.name);
+      var voce = null;
+      REBUS.forEach(function(r){
+        if (num && numeroDelFile(r.file) === num) voce = r;
+      });
+      if (!voce){
+        ignorate.push(f.name);
+        if (--restano === 0) fine();
+        return;
+      }
+      ridimensiona(f, function(dati){
+        if (dati){ vignette[voce.file] = dati; fatte++; }
+        else ignorate.push(f.name);
+        if (--restano === 0) fine();
+      });
+    });
+
+    function fine(){
+      var ok = scrivi(IMGS, vignette);
+      disegnaElencoImg();
+      mostraVignetta();
+      if (!ok){
+        $('imgMsg').className = 'msg ko';
+        $('imgMsg').textContent = 'Non c’è più spazio sul tablet per salvarle tutte: prova con meno vignette.';
+        return;
+      }
+      $('imgMsg').className = 'msg ' + (ignorate.length ? 'ko' : 'ok');
+      $('imgMsg').textContent =
+        (fatte === 0 ? 'Nessuna vignetta caricata'
+                     : fatte === 1 ? '1 vignetta caricata'
+                                   : fatte + ' vignette caricate') +
+        (ignorate.length ? ' · non riconosciute: ' + ignorate.join(', ') : '') + '.';
+    }
+    this.value = '';
+  });
+
+  $('svuotaImgBtn').addEventListener('click', function(){
+    ask('Togliere le vignette?', 'Le immagini salvate sul tablet verranno cancellate.', function(){
+      vignette = {};
+      scrivi(IMGS, vignette);
+      disegnaElencoImg();
+      mostraVignetta();
+      flash('Vignette rimosse.');
     });
   });
 
-  $('ovBtn').addEventListener('click', prossimo);
+  /* ------------------------ scrittura soluzioni --------------------- */
 
-  document.addEventListener('visibilitychange', function(){
-    if (document.hidden) stopTimer();
-    else if (!risolto && elapsed > 0) startTimer();
+  $('solsBtn').addEventListener('click', function(){
+    closeOv('set');
+    var ul = $('elencoSol');
+    ul.innerHTML = '';
+    REBUS.forEach(function(r){
+      var li = document.createElement('li');
+      var dati = document.createElement('div');
+      dati.className = 'dati';
+      var tit = document.createElement('span');
+      tit.className = 'tit';
+      tit.textContent = 'Rebus ' + r.numero + ' · ' + r.autore + ' · chiave (' + r.chiave + ')';
+      var inp = document.createElement('input');
+      inp.type = 'text';
+      inp.autocapitalize = 'characters';
+      inp.spellcheck = false;
+      inp.dataset.file = r.file;
+      inp.value = soluzioni[r.file] || '';
+      inp.placeholder = 'la soluzione, con gli spazi fra le parole';
+      dati.appendChild(tit);
+      dati.appendChild(inp);
+      li.appendChild(dati);
+      ul.appendChild(li);
+    });
+    $('solMsg').textContent = '';
+    $('solMsg').className = 'msg';
+    openOv('sols');
   });
+  $('solsClose').addEventListener('click', function(){ closeOv('sols'); });
 
-  ['help', 'set'].forEach(function(id){
-    $(id).addEventListener('click', function(ev){ if (ev.target === this) closeOv(id); });
+  $('solsSave').addEventListener('click', function(){
+    var avvisi = [];
+    document.querySelectorAll('#elencoSol input').forEach(function(inp){
+      var f = inp.dataset.file;
+      var v = normSol(inp.value);
+      if (!v){ delete soluzioni[f]; return; }
+      soluzioni[f] = v;
+      var voce = null;
+      REBUS.forEach(function(r){ if (r.file === f) voce = r; });
+      var attese = voce.chiave.split(/\s+/).map(Number).reduce(function(a, b){ return a + b; }, 0);
+      if (soleLettere(v).length !== attese){
+        avvisi.push('rebus ' + voce.numero + ' (' + soleLettere(v).length + ' lettere invece di ' + attese + ')');
+      }
+    });
+    var ok = scrivi(SOLS, soluzioni);
+    $('solMsg').className = 'msg ' + (ok && !avvisi.length ? 'ok' : 'ko');
+    if (!ok) $('solMsg').textContent = 'Non riesco a salvare sul tablet.';
+    else if (avvisi.length) $('solMsg').textContent = 'Salvate. Attenzione alla lunghezza: ' + avvisi.join('; ') + '.';
+    else $('solMsg').textContent = 'Soluzioni salvate.';
+    renderRisposta();
+    sel = primaVuota();
+    paint();
   });
 
   /* ------------------------------ avvio ---------------------------- */
 
   buildKeys();
-  if (!restore()){
-    ordine = shuffledIdx(REBUS.length);
-    pos = 0;
-    caricaRebus();
-  }
+  ripristina();
+  vai(pos);
   fitSoon();
-  setTimeout(fit, 400);       // ricalcolo quando i caratteri sono arrivati
-  setTimeout(fit, 1200);
+  setTimeout(fit, 400);
   window.addEventListener('load', fitSoon);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitSoon);
 })();
