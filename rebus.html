@@ -538,12 +538,12 @@
 var REBUS = [
   { file: 'rebus2.jpg',  numero: '3703', chiave: '8 8',  autore: 'Cavallina' },
   { file: 'rebus3.jpg',  numero: '4248', chiave: '7 9',  autore: 'Mentuccia' },
-  { file: 'rebus5.jpg',  numero: '4648', chiave: '7 9',  autore: 'G. Onorato' },
+  { file: 'rebus5.jpg',  numero: '4648', chiave: '7 9',  autore: 'G. Onorato', rifatto: true },
   { file: 'rebus10.jpg', numero: '2',    chiave: '5 8',  autore: 'G. Corvi' },
   { file: 'rebus12.jpg', numero: '5449', chiave: '6 6',  autore: 'Don Chisciotte' },
   { file: 'rebus14.jpg', numero: '5604', chiave: '7 8',  autore: 'L. Petrucci' },
   { file: 'rebus28.jpg', numero: '6416', chiave: '7 9',  autore: 'E. Laganà' },
-  { file: 'rebus30.jpg', numero: '6449', chiave: '10 5', autore: 'Ezechiello' }
+  { file: 'rebus30.jpg', numero: '6449', chiave: '10 5', autore: 'Ezechiello', rifatto: true }
 ];
 /* ======================== FINE DELL'ELENCO ============================ */
 
@@ -737,7 +737,10 @@ var REBUS = [
     });
 
     var haSol = !!(soluzioni[r.file] && soleLettere(soluzioni[r.file]).length);
-    $('chiave').innerHTML = 'Rebus <b>' + r.numero + '</b> · ' + r.autore +
+    /* dove il disegno è stato rifatto lo si dice: la firma è dell'autore
+       del rebus, non di chi ha ridisegnato la scena */
+    $('chiave').innerHTML = 'Rebus <b>' + r.numero + '</b> · ' +
+      (r.rifatto ? 'dal rebus di ' + r.autore + ' · disegno rifatto' : r.autore) +
       ' · chiave di lettura <b>(' + r.chiave + ')</b>' +
       (haSol ? '' : ' · <span style="color:var(--error)">soluzione da scrivere</span>');
 
