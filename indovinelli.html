@@ -408,7 +408,8 @@
       <button class="btn quiet" id="resetBtn">Azzera i segni</button>
     </div>
     <p class="fonte">I dieci quesiti sono ripresi dalla rubrica <b>I giochi furiosi</b> di Furio Honsell
-      (Enigmistica24). I testi sono stati riscritti e le soluzioni ricavate da capo.</p>
+      (Enigmistica24). I testi sono stati riscritti; le risposte seguono quelle pubblicate, con qualche
+      nota in più dove il conto merita una precisazione.</p>
     <div class="rowbtn"><button class="btn primary" id="setClose">Torna al gioco</button></div>
   </div>
 </div>
@@ -459,8 +460,8 @@ var INDOVINELLI = [
   {
     titolo: 'Somma uguale a prodotto',
     testo: 'Per ogni n si possono trovare n numeri interi positivi la cui somma è uguale al loro prodotto:{{ y₁ + y₂ + … + yₙ  =  y₁ × y₂ × … × yₙ }}Per quale n esistono esattamente due modi diversi di riuscirci?',
-    soluzione: 'n = 7.',
-    perche: 'Con sette numeri ci sono esattamente due possibilità: 1+1+1+1+1+2+7 = 14 e anche 1×1×1×1×1×2×7 = 14; oppure 1+1+1+1+1+3+4 = 12 e 1×1×1×1×1×3×4 = 12. Per n uguale a 2, 3, 4 e 6 la soluzione è una sola, per n = 5 sono tre: sette è il primo caso con due sole risposte.'
+    soluzione: 'n = 5.',
+    perche: 'La rubrica indica cinque, con queste due possibilità: 1+1+1+3+3 = 1×1×1×3×3 = 9, e 1+1+1+2+5 = 1×1×1×2×5 = 10. Un esempio per n = 8 è invece 1+1+1+1+1+1+2+8 = 1×1×1×1×1×1×2×8 = 16.{{ però attenzione }}Con cinque numeri ce n’è in realtà anche una terza: 1+1+2+2+2 = 1×1×2×2×2 = 8. Se si contano tutte, il primo numero con esattamente due sole soluzioni è il sette: 1+1+1+1+1+2+7 = 14 e 1+1+1+1+1+3+4 = 12.'
   },
   {
     titolo: 'Il cerchio delle streghe',
@@ -471,14 +472,14 @@ var INDOVINELLI = [
   {
     titolo: 'A bruciapelo',
     testo: 'Che cosa nascondono sei vie e sette rette?',
-    soluzione: '',
-    perche: 'La risposta non era stampata insieme al quesito e non sono riuscito a ricavarla con certezza. Quando la scoprite, scrivetela nel file accanto a questo indovinello: comparirà qui.'
+    soluzione: 'Sono un antipodo palindromo.',
+    perche: 'È la risposta data dalla rubrica. L’*antipodo* è la parola letta al contrario, il *palindromo* è quella che si legge uguale nei due versi. Il meccanismo preciso non viene spiegato: se al tavolo qualcuno lo ricostruisce, avrà vinto lui.'
   },
   {
     titolo: 'Gli scarponi',
     testo: 'Ieri un paio di scarponi costava il 25% in più di quanto costa oggi. Di quanto costa in meno oggi rispetto a ieri?',
-    soluzione: 'Del 20%.',
-    perche: 'Se oggi il prezzo è 100, ieri era 125. Il calo è di 25 su 125, cioè un quinto: il 20%. Le due percentuali non coincidono perché sono calcolate su basi diverse — il rincaro sul prezzo di oggi, lo sconto su quello di ieri.'
+    soluzione: 'Il 25%.',
+    perche: 'È la risposta della rubrica.{{ però attenzione }}Facendo il conto sul prezzo di ieri viene un numero diverso: se oggi il prezzo è 100, ieri era 125, e il calo di 25 su 125 vale un quinto, cioè il 20%. Le due percentuali non coincidono perché sono calcolate su basi diverse — il rincaro sul prezzo di oggi, lo sconto su quello di ieri.'
   },
   {
     titolo: 'Una definizione all’inglese',
@@ -489,8 +490,8 @@ var INDOVINELLI = [
   {
     titolo: 'Il cubetto di ghiaccio',
     testo: 'Un cubetto di ghiaccio galleggia in un bicchiere di cocktail. Quando si sarà sciolto del tutto, il livello del liquido nel bicchiere sarà salito o sceso?',
-    soluzione: 'Sarà sceso.',
-    perche: 'Un corpo che galleggia sposta un volume di liquido che pesa quanto lui. Il cocktail contiene alcol, quindi è meno denso dell’acqua: per spostare quel peso il cubetto deve spostare più volume di quanta acqua produrrà sciogliendosi. Il livello quindi cala. In un bicchiere di sola acqua, invece, resterebbe identico.'
+    soluzione: 'Salirà, di pochissimo.',
+    perche: 'In un bicchiere di sola acqua il livello resterebbe identico: il ghiaccio, sciogliendosi, occupa esattamente il posto che stava spostando. Nel cocktail no, perché è più denso dell’acqua: la parte di cubetto immersa sposta meno volume di quanta acqua nascerà dalla fusione, e il livello sale un pochino. Con un cocktail molto alcolico, e quindi meno denso dell’acqua, succederebbe l’opposto.'
   },
   {
     titolo: 'Il mazzo mescolato una volta sola',
@@ -501,14 +502,14 @@ var INDOVINELLI = [
   {
     titolo: 'I cavalieri della tavola rotonda',
     testo: 'I cavalieri siedono in cerchio a distanze uguali e ciascuno ha esattamente qualcuno di fronte a sé. Il ventitreesimo si trova di fronte al cinquantasettesimo. Quanti sono in tutto?',
-    soluzione: 'Sessantotto.',
-    perche: 'Se i cavalieri sono n, chi siede al posto k ha di fronte chi siede al posto k + n/2. Fra il 23 e il 57 ci sono 34 posti di differenza, quindi n/2 = 34 e i cavalieri sono 68. Il numero è per forza pari, altrimenti nessuno avrebbe qualcuno esattamente di fronte.'
+    soluzione: 'Sessantotto: (57 − 23) × 2.',
+    perche: 'Se i cavalieri sono n, chi siede al posto k ha di fronte chi siede al posto k + n/2. Fra il 23 e il 57 ci sono 34 posti di differenza, quindi metà cerchio vale 34 e i cavalieri sono 68. Il numero è per forza pari, altrimenti nessuno avrebbe qualcuno esattamente di fronte. Nella tradizione, poi, i cavalieri della tavola rotonda si contano in modi molto diversi da racconto a racconto.'
   },
   {
     titolo: 'Una seconda definizione all’inglese',
     testo: 'Ancora una definizione all’inglese: *quanti erano i cavalieri della tavola rotonda, ai tempi in cui da ragazzi ci si nascondeva nei licei* (5 lettere).',
     soluzione: 'DIECI.',
-    perche: 'La risposta è nascosta nelle parole stesse, ma va letta all’indietro: nella sequenza «…nei li·CEI·DA…», percorsa da destra verso sinistra, compaiono in fila le lettere D-I-E-C-I. Il verbo «nascondersi» è l’avvertimento che la parola è lì dentro, e non va cercata nel significato della frase.'
+    perche: 'La risposta è nascosta nelle parole stesse: sta dentro «ai *licei da*», da leggere all’indietro. Percorrendo quelle lettere da destra verso sinistra compaiono in fila D-I-E-C-I. Il verbo «nascondersi» è l’avvertimento che la parola è lì dentro, e non va cercata nel significato della frase.'
   }
 ];
 /* ==================== FINE DELL'ELENCO ================================ */
