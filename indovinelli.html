@@ -407,9 +407,8 @@
       <button class="btn" id="elencoBtn">Vai a un indovinello</button>
       <button class="btn quiet" id="resetBtn">Azzera i segni</button>
     </div>
-    <p class="fonte">I dieci quesiti sono ripresi dalla rubrica <b>I giochi furiosi</b> di Furio Honsell
-      (Enigmistica24). I testi sono stati riscritti; le risposte seguono quelle pubblicate, con qualche
-      nota in più dove il conto merita una precisazione.</p>
+    <p class="fonte">I quesiti e le soluzioni sono ripresi dalla rubrica <b>I giochi furiosi</b>
+      di Furio Honsell, pubblicata su Enigmistica24, e riportati con le parole dell&rsquo;autore.</p>
     <div class="rowbtn"><button class="btn primary" id="setClose">Torna al gioco</button></div>
   </div>
 </div>
@@ -453,33 +452,33 @@
 var INDOVINELLI = [
   {
     titolo: 'Una domanda',
-    testo: 'Il celebre indovinello inglese chiede che cosa è *never odd or even*, perché senza il *never* non è più palindromo.',
+    testo: 'Cos’è 8 e non è otto? Questa è una possibile versione italiana del famoso indovinello matematico inglese: cos’è *never odd or even*?',
     soluzione: 'Un palindromo.',
-    perche: 'La frase *never odd or even*, letta lettera per lettera all’indietro, è identica a sé stessa. Basta togliere il *never* e l’incantesimo si rompe: *odd or even* da sola, al contrario, non dice più niente. In italiano lo stesso scherzo si fa con il numero otto, che si legge uguale nei due versi tanto in cifra quanto in lettere.'
+    perche: ''
   },
   {
     titolo: 'Il cerchio delle streghe',
-    testo: 'Un chilo di funghi appena raccolti è fatto per il 99% di acqua. Lasciati al sole, i funghi perdono acqua finché il loro peso si dimezza. Adesso di quanta acqua sono fatti?',
-    soluzione: 'Del 98%.',
-    perche: 'La parte solida non evapora: è il 1% di un chilo, cioè 10 grammi, e resta tale. Alla fine i funghi pesano mezzo chilo, e quei 10 grammi di solido sono il 2% di 500 grammi. Tutto il resto, il 98%, è acqua. Sorprende perché il peso si dimezza ma la percentuale scende di un solo punto.'
+    testo: 'I funghi freschi sono fatti al 99% d’acqua. Se un chilo di funghi viene essiccato al sole fino a quando il loro peso si riduce della metà, quanto sarà diventata allora la percentuale d’acqua?',
+    soluzione: 'Il 98%.',
+    perche: ''
   },
   {
     titolo: 'Il cubetto di ghiaccio',
-    testo: 'Un cubetto di ghiaccio galleggia in un bicchiere di cocktail. Quando si sarà sciolto del tutto, il livello del liquido nel bicchiere sarà salito o sceso?',
-    soluzione: 'Salirà, di pochissimo.',
-    perche: 'In un bicchiere di sola acqua il livello resterebbe identico: il ghiaccio, sciogliendosi, occupa esattamente il posto che stava spostando. Nel cocktail no, perché è più denso dell’acqua: la parte di cubetto immersa sposta meno volume di quanta acqua nascerà dalla fusione, e il livello sale un pochino. Con un cocktail molto alcolico, e quindi meno denso dell’acqua, succederebbe l’opposto.'
+    testo: 'Un cubetto di ghiaccio galleggia nel cocktail. Quando fonde, il livello del cocktail nel bicchiere cresce o diminuisce?',
+    soluzione: 'Il livello resterebbe uguale se il cubetto galleggiasse nell’acqua, ma essendo la densità del cocktail maggiore di quella dell’acqua il livello salirà un pochino, in quanto la parte del cubetto che sta sotto il livello è inferiore a quella del volume d’acqua del cubetto fuso.',
+    perche: ''
   },
   {
-    titolo: 'Il mazzo mescolato una volta sola',
-    testo: 'Un mazzo di carte viene diviso in due parti e mescolato a incastro una volta soltanto. Poi lo si taglia in un punto in cui due carte hanno lo stesso colore e si distribuiscono le carte a coppie. Ogni coppia risulta formata da una carta rossa e una nera. Come doveva essere ordinato il mazzo all’inizio?',
-    soluzione: 'I colori si alternavano: rosso, nero, rosso, nero, e così via.',
-    perche: 'È il principio scoperto da Norman Gilbreath: se un mazzo alterna i due colori, dopo una sola mescolata a incastro le carte restano appaiate a due a due, una rossa e una nera in ogni coppia — comunque siano cadute le carte. Il taglio fra due carte dello stesso colore serve solo a far cominciare le coppie nel punto giusto.'
+    titolo: 'Il mazzo di Nicolaas de Bruijn',
+    testo: 'Il grande combinatorico spezzò il mazzo in due mazzetti con i quali ci fece fare una sola mescolata, poi lo tagliò in corrispondenza di due carte dello stesso colore e incominciò a distribuire due carte a ciascuno partendo dal fondo. Tutti ricevettero, con sorpresa, almeno una carta rossa e almeno una carta nera. Com’era disposto il mazzo inizialmente?',
+    soluzione: 'Le carte rosse e nere sono alternate in origine. Dopo una mescolata non ci possono mai essere tre carte consecutive dello stesso colore. Due carte dello stesso colore appartengono a mazzetti distinti. Dopo il secondo taglio partendo dal fondo abbiamo quindi una disposizione del tipo s₁S₁s₂S₂ … dove le sequenze s appartengono a un mazzetto e quelle S all’altro. Se s₁ è pari c’è l’alternanza originaria, se è dispari la prima carta di S₁ è del colore giusto a causa del secondo taglio, e così via.',
+    perche: ''
   },
   {
     titolo: 'I cavalieri della tavola rotonda',
-    testo: 'I cavalieri siedono in cerchio a distanze uguali e ciascuno ha esattamente qualcuno di fronte a sé. Il ventitreesimo si trova di fronte al cinquantasettesimo. Quanti sono in tutto?',
-    soluzione: 'Sessantotto: (57 − 23) × 2.',
-    perche: 'Se i cavalieri sono n, chi siede al posto k ha di fronte chi siede al posto k + n/2. Fra il 23 e il 57 ci sono 34 posti di differenza, quindi metà cerchio vale 34 e i cavalieri sono 68. Il numero è per forza pari, altrimenti nessuno avrebbe qualcuno esattamente di fronte. Nella tradizione, poi, i cavalieri della tavola rotonda si contano in modi molto diversi da racconto a racconto.'
+    testo: 'Quanti erano i cavalieri se, sedendo uno esattamente di fronte all’altro, il 23° sedeva di fronte al 57°?',
+    soluzione: '68: (57−23)×2. Nella tradizione i numeri dei cavalieri variano…',
+    perche: ''
   }
 ];
 /* ==================== FINE DELL'ELENCO ================================ */
@@ -599,7 +598,10 @@ var INDOVINELLI = [
     sol.classList.toggle('manca', manca);
     $('solEt').textContent = manca ? 'Soluzione mancante' : 'La soluzione';
     $('solRis').innerHTML = manca ? 'Non la sappiamo ancora.' : formatta(q.soluzione);
-    $('solPerche').innerHTML = formatta(q.perche);
+    /* il commento sotto la risposta compare solo se c'è davvero */
+    var nota = (q.perche || '').trim();
+    $('solPerche').innerHTML = formatta(nota);
+    $('solPerche').style.display = nota ? '' : 'none';
     sol.className = 'soluzione ' + (svelate[pos] ? 'aperta' : 'chiusa') + (manca ? ' manca' : '');
 
     $('solBtn').textContent = svelate[pos] ? 'Nascondi la soluzione' : 'Mostra la soluzione';
