@@ -574,14 +574,27 @@ var INDOVINELLI = [
 
   var corpoEl = document.querySelector('.corpo');
 
+  /* Con il contenuto centrato, quello che esce verso l'alto non si vede da
+     scrollHeight: vanno confrontati i riquadri veri di testo e soluzione. */
+  function entraTutto(){
+    var c = corpoEl.getBoundingClientRect();
+    var t = $('testo').getBoundingClientRect();
+    if (t.top < c.top - 1 || t.bottom > c.bottom + 1) return false;
+    var solEl = $('soluzione');
+    if (!solEl.classList.contains('chiusa')){
+      var s = solEl.getBoundingClientRect();
+      if (s.top < c.top - 1 || s.bottom > c.bottom + 1) return false;
+    }
+    return true;
+  }
+
   function fitTesto(){
-    var h = corpoEl.clientHeight;
-    if (h < 60) return;
+    if (corpoEl.clientHeight < 60) return;
     var base = grande ? 3.0 : 2.4;
     var root = document.documentElement;
     for (var s = base; s >= 0.85; s -= 0.05){
       root.style.setProperty('--testo', s.toFixed(2) + 'rem');
-      if (corpoEl.scrollHeight <= h) return;
+      if (entraTutto()) return;
     }
   }
   function fitSoon(){
