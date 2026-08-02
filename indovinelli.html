@@ -350,6 +350,12 @@
     .corpo{ flex-direction:row; align-items:center; gap:28px; }
     .corpo .testo{ flex:1 1 55%; }
     .corpo .soluzione.aperta{ flex:1 1 45%; align-self:stretch; display:flex; flex-direction:column; justify-content:center; }
+
+    /* soluzioni lunghe: in mezza scheda non ci starebbero, quindi si usa
+       tutta la larghezza, con la domanda sopra e la risposta sotto */
+    .corpo.ampia{ flex-direction:column; align-items:stretch; justify-content:center; gap:14px; }
+    .corpo.ampia .testo{ flex:0 0 auto; }
+    .corpo.ampia .soluzione.aperta{ flex:0 1 auto; align-self:auto; display:block; }
   }
 </style>
 </head>
@@ -555,21 +561,42 @@ var INDOVINELLI = [
     if (!solEl.classList.contains('chiusa')){
       var s = solEl.getBoundingClientRect();
       if (s.top < c.top - MARGINE || s.bottom > c.bottom + MARGINE) return false;
+      /* il riquadro della soluzione è alto quanto la scheda: va guardato
+         anche dentro, o il testo lungo resta tagliato senza che si veda */
+      if (solEl.scrollHeight > solEl.clientHeight + 2) return false;
     }
     return true;
   }
 
-  function fitTesto(){
-    if (corpoEl.clientHeight < 60) return;
-    var base = grande ? 3.0 : 2.4;
+  /* Cerca la misura più grande alla quale tutto sta dentro, con o senza
+     la soluzione affiancata. Restituisce 0 se non basta nemmeno la più
+     piccola. Lascia impostata la misura trovata. */
+  function misuraMassima(ampia, base){
     var root = document.documentElement;
+    corpoEl.classList.toggle('ampia', ampia);
     for (var s = base; s >= 0.85; s -= 0.05){
       root.style.setProperty('--testo', s.toFixed(2) + 'rem');
       /* obbligo il browser a ricalcolare prima di misurare: quando la
          soluzione compare, il testo si restringe e diventa più alto */
       void corpoEl.offsetHeight;
-      if (entraTutto()) return;
+      if (entraTutto()) return s;
     }
+    return 0;
+  }
+
+  function fitTesto(){
+    if (corpoEl.clientHeight < 60) return;
+    var base = grande ? 3.0 : 2.4;
+
+    /* si provano tutte e due le impaginazioni e si tiene quella che regge
+       il testo più grande: a parità, meglio la soluzione a fianco */
+    var conFianco = misuraMassima(false, base);
+    if (conFianco >= base) return;                 /* già al massimo: basta così */
+
+    var suTuttaLarghezza = misuraMassima(true, base);
+    if (suTuttaLarghezza > conFianco) return;      /* la seconda è già applicata */
+
+    misuraMassima(false, base);                    /* torno alla prima */
   }
   function fitSoon(){
     requestAnimationFrame(function(){ fitTesto(); requestAnimationFrame(fitTesto); });
