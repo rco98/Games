@@ -455,6 +455,11 @@
       min-height:0;
     }
     .cluebar .txt{ font-size:1.1rem; }
+
+    /* la colonna è stretta: nove tasti per riga verrebbero troppo sottili.
+       Li dispongo su sette colonne, sfruttando l'altezza che qui avanza. */
+    .keys{ display:grid; grid-template-columns:repeat(7, 1fr); gap:6px; }
+    .krow{ display:contents; }
   }
 </style>
 </head>
