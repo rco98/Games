@@ -638,9 +638,14 @@ var INDOVINELLI = [
     $('nextBtn').disabled = pos === INDOVINELLI.length - 1;
 
     salva();
-    /* prima subito, poi di nuovo a layout assestato: il secondo giro passa
-       da requestAnimationFrame, che resta fermo se la pagina non disegna */
+    /* Il primo giro può lavorare su misure vecchie: quando la soluzione
+       compare, il testo si restringe e cresce in altezza solo al riflusso
+       successivo. Perciò si misura due volte, e una terza fuori dal giro
+       corrente — senza dipendere da requestAnimationFrame, che resta fermo
+       se la pagina non sta disegnando. */
     fitTesto();
+    fitTesto();
+    setTimeout(fitTesto, 0);
     fitSoon();
   }
 
