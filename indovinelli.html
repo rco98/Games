@@ -633,6 +633,9 @@ var INDOVINELLI = [
     $('nextBtn').disabled = pos === INDOVINELLI.length - 1;
 
     salva();
+    /* prima subito, poi di nuovo a layout assestato: il secondo giro passa
+       da requestAnimationFrame, che resta fermo se la pagina non disegna */
+    fitTesto();
     fitSoon();
   }
 
