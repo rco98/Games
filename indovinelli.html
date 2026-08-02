@@ -576,14 +576,16 @@ var INDOVINELLI = [
 
   /* Con il contenuto centrato, quello che esce verso l'alto non si vede da
      scrollHeight: vanno confrontati i riquadri veri di testo e soluzione. */
+  var MARGINE = 4;   /* un filo di respiro: le misure a virgola non sono esatte */
+
   function entraTutto(){
     var c = corpoEl.getBoundingClientRect();
     var t = $('testo').getBoundingClientRect();
-    if (t.top < c.top - 1 || t.bottom > c.bottom + 1) return false;
+    if (t.top < c.top - MARGINE || t.bottom > c.bottom + MARGINE) return false;
     var solEl = $('soluzione');
     if (!solEl.classList.contains('chiusa')){
       var s = solEl.getBoundingClientRect();
-      if (s.top < c.top - 1 || s.bottom > c.bottom + 1) return false;
+      if (s.top < c.top - MARGINE || s.bottom > c.bottom + MARGINE) return false;
     }
     return true;
   }
@@ -594,6 +596,9 @@ var INDOVINELLI = [
     var root = document.documentElement;
     for (var s = base; s >= 0.85; s -= 0.05){
       root.style.setProperty('--testo', s.toFixed(2) + 'rem');
+      /* obbligo il browser a ricalcolare prima di misurare: quando la
+         soluzione compare, il testo si restringe e diventa più alto */
+      void corpoEl.offsetHeight;
       if (entraTutto()) return;
     }
   }
