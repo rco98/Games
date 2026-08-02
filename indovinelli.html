@@ -453,39 +453,15 @@
 var INDOVINELLI = [
   {
     titolo: 'Una domanda',
-    testo: 'Il celebre indovinello inglese chiede che cosa non sia mai *odd or even*, cioè né dispari né pari. La risposta non sta nel significato della frase, ma nel modo in cui è scritta. Che cos’è?',
+    testo: 'Il celebre indovinello inglese chiede che cosa è *never odd or even*, perché senza il *never* non è più palindromo.',
     soluzione: 'Un palindromo.',
-    perche: 'La frase *never odd or even*, letta lettera per lettera all’indietro, è identica a sé stessa: è quindi essa stessa un palindromo. In italiano lo stesso scherzo si fa con il numero otto, che si legge uguale nei due versi tanto in cifra quanto in lettere.'
-  },
-  {
-    titolo: 'Somma uguale a prodotto',
-    testo: 'Per ogni n si possono trovare n numeri interi positivi la cui somma è uguale al loro prodotto:{{ y₁ + y₂ + … + yₙ  =  y₁ × y₂ × … × yₙ }}Per quale n esistono esattamente due modi diversi di riuscirci?',
-    soluzione: 'n = 5.',
-    perche: 'La rubrica indica cinque, con queste due possibilità: 1+1+1+3+3 = 1×1×1×3×3 = 9, e 1+1+1+2+5 = 1×1×1×2×5 = 10. Un esempio per n = 8 è invece 1+1+1+1+1+1+2+8 = 1×1×1×1×1×1×2×8 = 16.{{ però attenzione }}Con cinque numeri ce n’è in realtà anche una terza: 1+1+2+2+2 = 1×1×2×2×2 = 8. Se si contano tutte, il primo numero con esattamente due sole soluzioni è il sette: 1+1+1+1+1+2+7 = 14 e 1+1+1+1+1+3+4 = 12.'
+    perche: 'La frase *never odd or even*, letta lettera per lettera all’indietro, è identica a sé stessa. Basta togliere il *never* e l’incantesimo si rompe: *odd or even* da sola, al contrario, non dice più niente. In italiano lo stesso scherzo si fa con il numero otto, che si legge uguale nei due versi tanto in cifra quanto in lettere.'
   },
   {
     titolo: 'Il cerchio delle streghe',
     testo: 'Un chilo di funghi appena raccolti è fatto per il 99% di acqua. Lasciati al sole, i funghi perdono acqua finché il loro peso si dimezza. Adesso di quanta acqua sono fatti?',
     soluzione: 'Del 98%.',
     perche: 'La parte solida non evapora: è il 1% di un chilo, cioè 10 grammi, e resta tale. Alla fine i funghi pesano mezzo chilo, e quei 10 grammi di solido sono il 2% di 500 grammi. Tutto il resto, il 98%, è acqua. Sorprende perché il peso si dimezza ma la percentuale scende di un solo punto.'
-  },
-  {
-    titolo: 'A bruciapelo',
-    testo: 'Che cosa nascondono sei vie e sette rette?',
-    soluzione: 'Sono un antipodo palindromo.',
-    perche: 'È la risposta data dalla rubrica. L’*antipodo* è la parola letta al contrario, il *palindromo* è quella che si legge uguale nei due versi. Il meccanismo preciso non viene spiegato: se al tavolo qualcuno lo ricostruisce, avrà vinto lui.'
-  },
-  {
-    titolo: 'Gli scarponi',
-    testo: 'Ieri un paio di scarponi costava il 25% in più di quanto costa oggi. Di quanto costa in meno oggi rispetto a ieri?',
-    soluzione: 'Il 25%.',
-    perche: 'È la risposta della rubrica.{{ però attenzione }}Facendo il conto sul prezzo di ieri viene un numero diverso: se oggi il prezzo è 100, ieri era 125, e il calo di 25 su 125 vale un quinto, cioè il 20%. Le due percentuali non coincidono perché sono calcolate su basi diverse — il rincaro sul prezzo di oggi, lo sconto su quello di ieri.'
-  },
-  {
-    titolo: 'Una definizione all’inglese',
-    testo: 'Nei cruciverba inglesi le definizioni sono piccoli indovinelli. Eccone una tradotta: *rimescolando una torsione si ottiene un nuotatore* (8 lettere).',
-    soluzione: 'STORIONE.',
-    perche: 'Le otto lettere di *torsione* rimescolate danno *storione*, che è un pesce, cioè un nuotatore. La definizione inglese originale funziona allo stesso modo: le lettere di *nurse got* rimescolate danno *sturgeon*, che in inglese è proprio lo storione.'
   },
   {
     titolo: 'Il cubetto di ghiaccio',
@@ -504,12 +480,6 @@ var INDOVINELLI = [
     testo: 'I cavalieri siedono in cerchio a distanze uguali e ciascuno ha esattamente qualcuno di fronte a sé. Il ventitreesimo si trova di fronte al cinquantasettesimo. Quanti sono in tutto?',
     soluzione: 'Sessantotto: (57 − 23) × 2.',
     perche: 'Se i cavalieri sono n, chi siede al posto k ha di fronte chi siede al posto k + n/2. Fra il 23 e il 57 ci sono 34 posti di differenza, quindi metà cerchio vale 34 e i cavalieri sono 68. Il numero è per forza pari, altrimenti nessuno avrebbe qualcuno esattamente di fronte. Nella tradizione, poi, i cavalieri della tavola rotonda si contano in modi molto diversi da racconto a racconto.'
-  },
-  {
-    titolo: 'Una seconda definizione all’inglese',
-    testo: 'Ancora una definizione all’inglese: *quanti erano i cavalieri della tavola rotonda, ai tempi in cui da ragazzi ci si nascondeva nei licei* (5 lettere).',
-    soluzione: 'DIECI.',
-    perche: 'La risposta è nascosta nelle parole stesse: sta dentro «ai *licei da*», da leggere all’indietro. Percorrendo quelle lettere da destra verso sinistra compaiono in fila D-I-E-C-I. Il verbo «nascondersi» è l’avvertimento che la parola è lì dentro, e non va cercata nel significato della frase.'
   }
 ];
 /* ==================== FINE DELL'ELENCO ================================ */
